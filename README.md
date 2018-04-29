@@ -1,2 +1,2 @@
-# c-_symbols_mangling
-this project is to parse strings in c++ language style into c++ symbols in string type
+# cpp_symbols_mangling
+this folder contains scripts in lua that takes in strings in C++ language style and ouput strings of symbols which respond to input strings.
