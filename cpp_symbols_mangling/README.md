@@ -30,7 +30,7 @@ try _cpp_symbol_gen('do_something')_"
 
 2. for a sigle function or variable in .cpp file. just add _::_ in the front of the name of the function or the variable.
 >"For example, if you have a function _void do_something(int argc,char *args[])_ in a.cpp file. To get the symbol for this function,
-try _cpp_symbol_gen('::do_something(int,char*')_ .Please note that, here, the arguments' type are specified. This is because in C++,
+try _cpp_symbol_gen('::do_something(int,char**')_ .Please note that, here, the arguments' type are specified. This is because in C++,
 arguments' type count in identifying itself."
 
 3.for functions in a class, do as following:
@@ -44,5 +44,5 @@ arguments' type count in identifying itself."
 >  int do_something(int argc, char* agrs[]);
 >};
 >```
->and then you want the symbol name for do_something, just try _cpp_symbol_gen('dumy::do_somthing(int,char*)')_ .
-if _class dumy_ is withing a namespace call ns_dumy, then try _cpp_symbol_gen('ns_dumy::dumy::do_something(int,char*)')_ 
+>and then you want the symbol name for do_something, just try _cpp_symbol_gen('dumy::do_somthing(int,char**)')_ .
+if _class dumy_ is withing a namespace call ns_dumy, then try _cpp_symbol_gen('ns_dumy::dumy::do_something(int,char**)')_ 
