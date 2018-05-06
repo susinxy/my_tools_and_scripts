@@ -45,4 +45,4 @@ arguments' type count in identifying itself."
 >};
 >```
 >and then you want the symbol name for do_something, just try _cpp_symbol_gen('dumy::do_somthing(int,char*)')_ .
-if _class dumy_ is withing anamespace call ns_dumy, then try _cpp_symbol_gen('ns_dumy::dumy:do_something(int,char*)')_ 
+if _class dumy_ is withing a namespace call ns_dumy, then try _cpp_symbol_gen('ns_dumy::dumy::do_something(int,char*)')_ 
