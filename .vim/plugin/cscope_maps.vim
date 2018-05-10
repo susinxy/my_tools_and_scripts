@@ -22,12 +22,51 @@
 "
 " Jason Duell       jduell@alumni.princeton.edu     2002/3/7
 """"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
-
+"this function will read a file named .myvimcscopeprj and generate cscope.out and tags in
+"the directories specified in .myvimcscopeprj, and will add tags and connect to cscope.outs
+function s:get_cscope_ctags_outputs()
+" .myvimcscopeprj is a file where I use to store a list of directiories in which
+" the generated output files are stored. In the .myvimcscopeprj file, one line specifies
+" one directory. All recognizable files under the specified directiories will be included
+" The reason code below using shell varaiable is that things like 'set tags+=l:dir/tags'
+" and 'cs add l:line substitute(l:line,'/cscope.out','','')' won't work as it is supposed.
+    let l:ctags=$CTAGSTEMP
+    if filereadable('.myvimcscopeprj')
+        let l:dirs=readfile('.myvimcscopeprj')
+        for l:dir in l:dirs
+            silent execute '!cd ' l:dir ';cscope -bqkR -P $(pwd);ctags -R $(pwd)'
+            if match(l:dir,'/') == 0
+                let $CTAGSTEMP=l:dir
+            else
+                let $CTAGSTEMP=getcwd() . l:dir
+            endif
+            set tags+=$CTAGSTEMP/tags
+        endfor
+    endif
+    let $CTAGSTEMP=l:ctags
+    
+    silent execute '!find $(pwd) -type f -name cscope.out > .cscopeout'
+    let l:cscopeout=$CSCOPEOUTSHELL
+    let l:cscopeoutdir=$CSCOPEOUTSHELLDIR
+    let l:lines=readfile('.cscopeout')
+    for l:line in l:lines
+        let $CSCOPEOUTSHELL=l:line
+        let $CSCOPEOUTSHELLDIR=substitute(l:line,'/cscope.out','','')
+        cs add $CSCOPEOUTSHELL $CSCOPEOUTSHELLDIR
+    endfor
+    let $CSCOPEOUTSHELL=l:cscopeout
+    let $CSCOPEOUTSHELLDIR=l:cscopeoutdir
+    silent execute '!rm .cscopeout'
+    if len(l:lines) == 0
+        return 0
+    else
+        return 1
+    endif
+endfunction
 
 " This tests to see if vim was configured with the '--enable-cscope' option
 " when it was compiled.  If it wasn't, time to recompile vim... 
 if has("cscope")
-
     """"""""""""" Standard cscope/vim boilerplate
 
     " use both cscope and ctag for 'ctrl-]', ':ta', and 'vim -t'
@@ -37,12 +76,12 @@ if has("cscope")
     " if you want the reverse search order.
     set csto=0
 
-    " add any cscope database in current directory
-    if filereadable("cscope.out")
-        cs add cscope.out  
-    " else add the database pointed to by environment variable 
-    elseif $CSCOPE_DB != ""
-        cs add $CSCOPE_DB
+    " add any cscope database and ctags in directories specified
+    if s:get_cscope_ctags_outputs() == 0
+    " if no dirctory specified, add the database pointed to by environment variable 
+        if $CSCOPE_DB != ""
+            cs add $CSCOPE_DB
+        endif
     endif
 
     " show msg when any other cscope db added
