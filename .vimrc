@@ -1,6 +1,11 @@
+" set indentation and syntax
 set tabstop=4
 set shiftwidth=4
 set expandtab
-syntax on
-
+syntax enable
 set smartindent
+
+" enable filetype options to auto recognize file type and use corresponding plugin to parse files
+filetype on
+filetype indent on
+filetype plugin on

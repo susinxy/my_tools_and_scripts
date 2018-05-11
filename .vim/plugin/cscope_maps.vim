@@ -42,26 +42,28 @@ function s:get_cscope_ctags_outputs()
             endif
             set tags+=$CTAGSTEMP/tags
         endfor
-    endif
-    let $CTAGSTEMP=l:ctags
+
+        let $CTAGSTEMP=l:ctags
     
-    silent execute '!find $(pwd) -type f -name cscope.out > .cscopeout'
-    let l:cscopeout=$CSCOPEOUTSHELL
-    let l:cscopeoutdir=$CSCOPEOUTSHELLDIR
-    let l:lines=readfile('.cscopeout')
-    for l:line in l:lines
-        let $CSCOPEOUTSHELL=l:line
-        let $CSCOPEOUTSHELLDIR=substitute(l:line,'/cscope.out','','')
-        cs add $CSCOPEOUTSHELL $CSCOPEOUTSHELLDIR
-    endfor
-    let $CSCOPEOUTSHELL=l:cscopeout
-    let $CSCOPEOUTSHELLDIR=l:cscopeoutdir
-    silent execute '!rm .cscopeout'
-    if len(l:lines) == 0
-        return 0
-    else
-        return 1
+        silent execute '!find $(pwd) -type f -name cscope.out > .cscopeout'
+        let l:cscopeout=$CSCOPEOUTSHELL
+        let l:cscopeoutdir=$CSCOPEOUTSHELLDIR
+        let l:lines=readfile('.cscopeout')
+        for l:line in l:lines
+            let $CSCOPEOUTSHELL=l:line
+            let $CSCOPEOUTSHELLDIR=substitute(l:line,'/cscope.out','','')
+            cs add $CSCOPEOUTSHELL $CSCOPEOUTSHELLDIR
+        endfor
+        let $CSCOPEOUTSHELL=l:cscopeout
+        let $CSCOPEOUTSHELLDIR=l:cscopeoutdir
+        silent execute '!rm .cscopeout'
+        if len(l:lines) == 0
+            return 0
+        else
+            return 1
+        endif
     endif
+    return 0
 endfunction
 
 " This tests to see if vim was configured with the '--enable-cscope' option
