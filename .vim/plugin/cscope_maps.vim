@@ -22,8 +22,7 @@
 "
 " Jason Duell       jduell@alumni.princeton.edu     2002/3/7
 """"""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""""
-"this function will read a file named .myvimcscopeprj and generate cscope.out and tags in
-"the directories specified in .myvimcscopeprj, and will add tags and connect to cscope.outs
+"added by susin:this function will read a file named .myvimcscopeprj and generate cscope.out and tags inthe directories specified in .myvimcscopeprj, and will add tags and connect to cscope.outs
 function s:get_cscope_ctags_outputs()
 " .myvimcscopeprj is a file where I use to store a list of directiories in which
 " the generated output files are stored. In the .myvimcscopeprj file, one line specifies
@@ -31,6 +30,7 @@ function s:get_cscope_ctags_outputs()
 " The reason code below using shell varaiable is that things like 'set tags+=l:dir/tags'
 " and 'cs add l:line substitute(l:line,'/cscope.out','','')' won't work as it is supposed.
     let l:ctags=$CTAGSTEMP
+    let l:cscopeout=$CSCOPEOUTSHELL
     if filereadable('.myvimcscopeprj')
         let l:dirs=readfile('.myvimcscopeprj')
         for l:dir in l:dirs
@@ -38,32 +38,45 @@ function s:get_cscope_ctags_outputs()
             if match(l:dir,'/') == 0
                 let $CTAGSTEMP=l:dir
             else
-                let $CTAGSTEMP=getcwd() . l:dir
+                let $CTAGSTEMP=getcwd() . '/' .  l:dir
             endif
+            let $CSCOPEOUTSHELL=$CTAGSTEMP . '/cscope.out'
+            cs add $CSCOPEOUTSHELL $CTAGSTEMP 
             set tags+=$CTAGSTEMP/tags
         endfor
 
         let $CTAGSTEMP=l:ctags
-    
-        silent execute '!find $(pwd) -type f -name cscope.out > .cscopeout'
-        let l:cscopeout=$CSCOPEOUTSHELL
-        let l:cscopeoutdir=$CSCOPEOUTSHELLDIR
-        let l:lines=readfile('.cscopeout')
-        for l:line in l:lines
-            let $CSCOPEOUTSHELL=l:line
-            let $CSCOPEOUTSHELLDIR=substitute(l:line,'/cscope.out','','')
-            cs add $CSCOPEOUTSHELL $CSCOPEOUTSHELLDIR
-        endfor
         let $CSCOPEOUTSHELL=l:cscopeout
-        let $CSCOPEOUTSHELLDIR=l:cscopeoutdir
-        silent execute '!rm .cscopeout'
-        if len(l:lines) == 0
+    
+        if len(l:dirs) == 0
             return 0
         else
             return 1
         endif
     endif
     return 0
+endfunction
+
+"add by susin: used to auto update cscope.out and ctags
+function s:autoupdatecscopectags(filename)
+    if filereadable('.myvimcscopeprj') == 0
+        return
+    endif
+    let l:fullpathfilename=a:filename
+    if match(a:filename,'/') != 0
+        let l:fullpathfilename=getcwd() . '/' . a:filename
+    endif
+    let l:dirs=readfile('.myvimcscopeprj')
+    for l:dir in l:dirs
+        if match(l:dir,'/') != 0
+            let l:dir=getcwd() . '/' . l:dir
+        endif
+        if match(l:fullpathfilename,l:dir) != -1
+            silent execute '!cd ' l:dir ';cscope -bqkR -P ' l:dir ';ctags -R ' l:dir
+            silent cs reset
+            return
+        endif
+    endfor
 endfunction
 
 " This tests to see if vim was configured with the '--enable-cscope' option
@@ -79,12 +92,19 @@ if has("cscope")
     set csto=0
 
     " add any cscope database and ctags in directories specified
+    " modified by susin to use auto cscope and ctags generation
     if s:get_cscope_ctags_outputs() == 0
     " if no dirctory specified, add the database pointed to by environment variable 
         if $CSCOPE_DB != ""
             cs add $CSCOPE_DB
         endif
     endif
+
+    " added by susin to use auto cscope and ctags update
+    augroup autoupdatecscopectags
+        au!
+        au BufWritePost *.cc,*.c,*.h,*.cpp,*.hpp call s:autoupdatecscopectags(@%)
+    augroup END
 
     " show msg when any other cscope db added
     set cscopeverbose  
