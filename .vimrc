@@ -9,3 +9,6 @@ set smartindent
 filetype on
 filetype indent on
 filetype plugin on
+
+" show the line where the cursor is
+set cursorline
