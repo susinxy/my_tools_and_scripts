@@ -12,3 +12,9 @@ filetype plugin on
 
 " show the line where the cursor is
 set cursorline
+
+" show line numbers
+set number
+
+" set background color to dark
+set background=dark
