@@ -1,0 +1,7 @@
+1.this project uses google test as the test frame, therefore you need to compile google test library before running any test of this project. By the way, this build project uses cmake. you need to install cmake 2.6.4 or above before ge started.
+2.this project precompiled 64-bit x86 gtest and gmock libraries.So if your are running this project on a 64-bit intel CPU, you can running the test by following steps
+    a.cd build
+    b.cmake ..
+    c.make
+    d.then any file with name ending with main under build is an executable file to run 
+3.if your enviroment cannot work with the gtest binary files profied by this project file and you don't know how to compile gtest from source code, please contact me
