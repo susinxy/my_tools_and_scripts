@@ -1,5 +1,7 @@
 cmake_minimum_required(VERSION 2.6.4)
 
+include_directories(${CMAKE_CURRENT_LIST_DIR}/gtinclude)
+
 link_directories(${CMAKE_CURRENT_LIST_DIR}/gtlib)
 
 add_subdirectory(recorder)

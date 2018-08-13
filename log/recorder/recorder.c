@@ -44,7 +44,7 @@ int record(unsigned int section,unsigned int type, unsigned int key, unsigned in
     return 0;
 }
 
-int record_section(int section_id,void *addr,int len)
+int record_section(int section_id,int block_size,void *addr,int len)
 {
     return 0;
 }
