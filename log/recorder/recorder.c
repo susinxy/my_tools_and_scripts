@@ -140,14 +140,11 @@ int record_section(int section_id,int block_size,void *addr,int len)
     unsigned int cnt=len/(record_node_len+block_size);
     record_node *current=(record_node*)addr;
     //initialize record_node information
-    for(int i=1;i<=cnt;++i)
+    for(int i=0;i<cnt;++i)
     {
         current->in_use=0;
         current->how_many_blocks=0;
-        if(i==cnt)
-            current->block_offset=record_node_len*cnt;
-        else
-            current->block_offset=record_node_len*cnt+block_size*i;
+        current->block_offset=record_node_len*cnt+block_size*i;
         current+=record_node_len;
     }
     return 0;
