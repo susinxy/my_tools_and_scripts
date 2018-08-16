@@ -116,7 +116,14 @@ int record(int section_id,unsigned int type, unsigned int key, unsigned int oper
    }
    //write memory
    char *q=(char*)(table[section_id].addr);
-   memcpy(q+p[table[section_id].next_write_address].block_offset,contents,contents->len);
+   unsigned int x=p[table[section_id].next_write_address].block_offset;
+   if(x+contents->len>table[section_id].len)
+   {
+      memcpy(q+x,contents,table[section_id].len-x);
+      memcpy(q,contents+table[section_id].len-x,contents->len+x-table[section_id].len);
+   }
+   else memcpy(q+x,contents,contents->len);
+  
    //update next_write_address and record_node
    unsigned int cnt=table[section_id].len/(record_node_len+table[section_id].block_size);
    table[section_id].next_write_address=(table[section_id].next_write_address+block_covered)%cnt;
