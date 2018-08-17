@@ -166,7 +166,7 @@ void visualization(void* addr,int length,int block_size,char* filename)
 {
 	FILE *fp; //定义一个文件指针
 	int  num, n; //n表示正在读的block编号
-	unsigned char *p, *q;
+	unsigned char *p, *q; 
 	//将传入地址赋给指针q，q用来指向record_node，p用来指向record_element
 	q = (unsigned char*)addr;
 	//num用来存储计算出的该分区的block总数
@@ -175,17 +175,17 @@ void visualization(void* addr,int length,int block_size,char* filename)
 	record_node *rn = (record_node*)malloc(sizeof(record_node));
 	record_element *re = (record_element*)malloc(sizeof(record_element));
 	//将文件指针指向record.xls文件的开头
-	fp = fopen(filename, "w");
+	fp = fopen(filename , "w");
 
-	for (n = 0; n<num;) {
+	for (n = 0; n < num;) {
 		memcpy(&rn->in_use, q, sizeof(char));
 		memcpy(&rn->block_offset, q, sizeof(int));
 		memcpy(&rn->how_many_blocks, q, sizeof(int));
-		n = n + rn->how_many_blocks;//计算下条日志的n
-		p = (unsigned char*)(addr + rn->block_offset);//计算本条日志的record_element地址
+		p = (unsigned char*)addr + rn->block_offset;//计算本条日志的record_element地址
 		//判断是否为日志开始
 		if (rn->in_use == 1 && rn->how_many_blocks != 0) {
-			if (n < num)
+			n = n + rn->how_many_blocks;//计算下条日志的开始record_node编号n
+			if (n <= num)
 				q = q + rn->how_many_blocks * record_node_len;
 			//针对日志一部分在分区前部，一部分在分区后部的情况
 			//先将该日志分区后部的内容存到r指针中，再将分区前部的内容紧接着
@@ -193,19 +193,17 @@ void visualization(void* addr,int length,int block_size,char* filename)
 			else {
 				//定义一个指针r并分配内存
 				char* r = (char*)malloc(sizeof(rn->how_many_blocks*block_size));
-				int n1,n2,n3;
+				int n1, n2, n3;
 				n1 = num + rn->how_many_blocks - n;
 				n2 = n - num;
 				n3 = n - rn->how_many_blocks;
-				q = q - sizeof((n3 - n2)*record_node_len);
 				memcpy(r, p, sizeof(n1*block_size));
 				p = p - n3 * block_size;
-				memcpy(r+sizeof(n1*block_size), p, sizeof(n2*block_size));
-				p = (unsigned char*)r;
+				memcpy(r + sizeof(n1*block_size), p, sizeof(n2*block_size));
+				p = r;
 				free(r);
 			}
-
-			//将指针p的内容存入结构体指针re
+            //将指针p的内容存入结构体指针re
 			memcpy(&re->year, p, sizeof(short));
 			p = p + sizeof(short);
 			memcpy(&re->month, p, sizeof(char));
@@ -229,12 +227,15 @@ void visualization(void* addr,int length,int block_size,char* filename)
 			memcpy(&re->data, p, re->len - record_element_len);
 
 			//将结构体的内容读入文件
-			fprintf(fp, "%d\t%c\t%c\t%c\t%c\t%c\t%d\t%d\t%d\t%d\t%s\n", re->year,\
+			fprintf(fp, "%d\t%c\t%c\t%c\t%c\t%c\t%d\t%d\t%d\t%d\t%s\n", re->year, \
 				re->month, re->day, re->hour, re->min, re->sec, re->type, re->key, \
 				re->oper, re->len, re->data);
 		}
+		else
+			n = n + 1;
 	}
 	free(rn);
 	free(re);
 	fclose(fp);
 }
+
