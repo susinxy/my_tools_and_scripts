@@ -4,8 +4,8 @@
 #ifdef __cplusplus
 extern "C" {
 #endif
-int compress(void *addr_in,int len_in, void**addr_out, int *len_out);
-int decompress(void *addr_in,int len_in, void**addr_out, int *len_out);
+int compress(void *addr_in,int len_in, void*addr_out, int *len_out);
+int decompress(void *addr_in,int len_in, void*addr_out, int *len_out);
 
 #ifdef __cplusplus
 }
