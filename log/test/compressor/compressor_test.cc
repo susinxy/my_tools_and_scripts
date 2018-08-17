@@ -25,7 +25,6 @@ TEST(compressor,para_test)
     {
         str[i] = rand() % 100 + 28;  
     }
-    //printf("%s",str); 
     printf("%s",str);
     compress(str,sizeof(str),(void*)compress_out,&compress_len_out);
     decompress(compress_out,compress_len_out,(void*)decompress_out,&decompress_len_out);   
