@@ -39,7 +39,8 @@ typedef struct _section
 }section;
 
 section table[MaxSize];
-
+/*malloc and free are time consuming apis that we should be avoid using in a high performence required implementation*//*issue*/
+/*this implementation does not take advantage the data structure we desired for node, code logic is too complecated for operations like these*//*issue*/
 int record(int section_id,unsigned int type, unsigned int key, unsigned int oper,int para_cnt,...)
 {
     va_list v_args;
@@ -90,7 +91,7 @@ int record(int section_id,unsigned int type, unsigned int key, unsigned int oper
     contents->key=key;
     contents->oper=oper;
     contents->len=record_element_len+totol_len+1;
-    memcpy(contents->data,tmp,totol_len+1);
+    memcpy(contents->data,tmp,totol_len+1);/*one more byte is copied while this byte should not be copied to the record*//*issue*/
     free(tmp);
    //compute how many blocks will be covered by the record
    unsigned int block_covered;
@@ -102,8 +103,8 @@ int record(int section_id,unsigned int type, unsigned int key, unsigned int oper
    record_node* p=(record_node*)(table[section_id].addr);
    printf("%d ",p->block_offset);
    int i,j;
-   for(i=table[section_id].next_write_address;i<block_covered;++i)
-   {
+   for(i=table[section_id].next_write_address;i<block_covered;++i)/*this loop is gonna fail when a second record is to be logged*//*issue*/
+   {/*normally we do not encorage people to writing for-loops like this*//*issue*/
        j=p[i].how_many_blocks;
        if(p[i].in_use==1&&j!=0)
        {
@@ -162,6 +163,7 @@ int record_section_destory(int section_id)
     //do nothing
     return 0;
 }
+/*the following implementation is too hard coded, and it is very difficult to be rewriten to achieve anohter way of visualization*//*issue*/
 void visualization(void* addr,int length,int block_size,char* filename)
 {
 	FILE *fp; //定义一个文件指针
@@ -178,7 +180,7 @@ void visualization(void* addr,int length,int block_size,char* filename)
 	fp = fopen(filename , "w");
 
 	for (n = 0; n < num;) {
-		memcpy(&rn->in_use, q, sizeof(char));
+		memcpy(&rn->in_use, q, sizeof(char));/*this and following copy will not work correctly*//*issue*/
 		memcpy(&rn->block_offset, q, sizeof(int));
 		memcpy(&rn->how_many_blocks, q, sizeof(int));
 		p = (unsigned char*)addr + rn->block_offset;//计算本条日志的record_element地址
