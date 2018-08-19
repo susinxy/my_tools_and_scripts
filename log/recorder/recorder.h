@@ -1,5 +1,8 @@
 #ifndef _LOG_RECORDER_H
 #define _LOG_RECORDER_H
+#ifdef __cplusplus
+extern "C" {
+#endif
 #define MaxSize 128
 #define record_node_len sizeof(record_node)
 #define record_element_len sizeof(record_element)
@@ -38,5 +41,8 @@ int record_section(int section_id,int block_size,void *addr,int len);
 int record_section_destory(int section_id);
 
 void visualization(void* addr,int length,int block_size,char* filename);
+#ifdef __cplusplus
+}
+#endif
 #endif
 
