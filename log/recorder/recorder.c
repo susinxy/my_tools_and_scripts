@@ -49,10 +49,18 @@ int record(int section_id,int type,int key,int oper,int para_cnt,...)
     block_covered=contents->len/table[section_id].block_size;
    else block_covered=contents->len/table[section_id].block_size+1;
 
-   //mark the blocks which will be rewrite
    char *initial_addr=(char *)table[section_id].addr;
-
-   record_node* p=(record_node*)(initial_addr+table[section_id].next_write_address);
+    //write memory
+   record_node *p=(record_node*)(initial_addr+table[section_id].next_write_address);
+   unsigned int x=p->block_offset;
+   unsigned int cnt=table[section_id].len/(record_node_len+table[section_id].block_size);
+   if(x+(contents->len)>table[section_id].len)
+   {
+      memcpy(initial_addr+x,contents,table[section_id].len-x);
+      memcpy(initial_addr+cnt*record_node_len,contents+table[section_id].len-x,contents->len+x-table[section_id].len);
+   }
+   else memcpy(initial_addr+x,contents,contents->len);
+   //update record_node information
    for(int i=0;i<block_covered;)
    {
       if(p->in_use==1&&p->how_many_blocks!=0)
@@ -62,6 +70,7 @@ int record(int section_id,int type,int key,int oper,int para_cnt,...)
           for(int j=0;j<k;++j)
           {
               p->in_use=0;
+              p->how_many_blocks=0;
               p=(record_node*)(initial_addr+p->next_offset);
           }
       }
@@ -69,6 +78,7 @@ int record(int section_id,int type,int key,int oper,int para_cnt,...)
       {
           i+=1;
           p->in_use=0;
+          p->how_many_blocks=0;
           p=(record_node*)(initial_addr+p->next_offset);
       }
    }
@@ -91,14 +101,7 @@ int record(int section_id,int type,int key,int oper,int para_cnt,...)
 
        }
    }
-   //write memory
-   unsigned int x=p[table[section_id].next_write_address].block_offset;
-   if(x+(contents->len)>table[section_id].len)
-   {
-      memcpy(initial_addr+x,contents,table[section_id].len-x);
-      memcpy(initial_addr,contents+table[section_id].len-x,contents->len+x-table[section_id].len);
-   }
-   else memcpy(initial_addr+x,contents,contents->len);
+
    return 0;
 }
 
@@ -120,7 +123,7 @@ int record_section(int section_id,int block_size,void *addr,int len)
         if(i==cnt)
         {
             current->next_offset=0;
-            current->block_offset=0;
+            current->block_offset=record_node_len*cnt;
         }
         else
         {
