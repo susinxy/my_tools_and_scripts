@@ -25,7 +25,6 @@ int record(int section_id,int type,int key,int oper,int para_cnt,...)
         totol_len+=para_len;
     }
     va_end(v_args);
-
     char record_contents[MAXLEN];
     //here variable contents means a record which will be written into memory
     record_element *contents=(record_element*)record_contents;
@@ -45,6 +44,7 @@ int record(int section_id,int type,int key,int oper,int para_cnt,...)
     contents->oper=oper;
     contents->len=record_element_len+totol_len;
     memcpy(contents->data,tmp,totol_len);
+    contents->data[totol_len]='\0';
    //compute how many blocks will be covered by the record
    unsigned int block_covered;
    if(contents->len%table[section_id].block_size==0)
@@ -58,8 +58,7 @@ int record(int section_id,int type,int key,int oper,int para_cnt,...)
    for(int i=0;i<block_covered;++i)
    {
            //write memory
-           memcpy(initial_addr+p->block_offset,q,table[section_id].block_size);
-           q+=table[section_id].block_size;
+           memcpy(initial_addr+p->block_offset,q+table[section_id].block_size*i,table[section_id].block_size);
            //update record_node information
            if(i==0) p->how_many_blocks=block_covered;
            else p->how_many_blocks=0;
@@ -126,30 +125,26 @@ int visualization(void* addr,int len,int block_size,char* filename)
     unsigned int n,num = len / (record_node_len + block_size);
     char* initial_addr=(char*)addr;
     record_node* rn=(record_node*)(initial_addr);
-
     for(n=0;n<num;)
     {
             if(rn->in_use==1&&rn->how_many_blocks!=0)
             {
                 n+=rn->how_many_blocks;
-                
                 char *record_contents=malloc(rn->how_many_blocks*block_size);
                 int k=rn->how_many_blocks;
                 for(int i=0;i<k;++i)
                 {
-                    
                     memcpy(record_contents+i*block_size,initial_addr+rn->block_offset,block_size);
                     rn=(record_node*)(initial_addr+rn->next_offset);
                 }
-            
                 record_element* re=(record_element*)record_contents;
                 memcpy(re->data,record_contents+record_element_len,re->len-record_element_len);
-                output(filename,re);
+                if(output(filename,re)==-1) return -1;
+
                 free(record_contents);
             }
             else
             {
-                    
                     rn=(record_node*)(initial_addr+rn->next_offset);
                     n+=1;
             }
