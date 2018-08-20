@@ -10,10 +10,12 @@ section table[MAXSIZE];
 int record(int section_id,int type,int key,int oper,int para_cnt,...)
 {
     char tmp[MAXLEN];
-    va_list v_args;
-    unsigned int para_len;
     unsigned int totol_len=0;
+    va_list v_args;
+
+    unsigned int para_len;
     char *para;
+
     va_start(v_args,para_cnt);
     for(int i=0;i<para_cnt;i++)
     {
@@ -23,9 +25,9 @@ int record(int section_id,int type,int key,int oper,int para_cnt,...)
         totol_len+=para_len;
     }
     va_end(v_args);
-    //here variable contents means a record which will be written into memory
+
     char record_contents[MAXLEN];
-    //record_element *contents=(record_element*)malloc(record_element_len+totol_len+1);
+    //here variable contents means a record which will be written into memory
     record_element *contents=(record_element*)record_contents;
     //Acquire system time
     struct tm *times;
@@ -49,59 +51,22 @@ int record(int section_id,int type,int key,int oper,int para_cnt,...)
     block_covered=contents->len/table[section_id].block_size;
    else block_covered=contents->len/table[section_id].block_size+1;
 
+   //mark the blocks which will be rewrite
    char *initial_addr=(char *)table[section_id].addr;
-    //write memory
    record_node *p=(record_node*)(initial_addr+table[section_id].next_write_address);
-   unsigned int x=p->block_offset;
-   unsigned int cnt=table[section_id].len/(record_node_len+table[section_id].block_size);
-   if(x+(contents->len)>table[section_id].len)
-   {
-      memcpy(initial_addr+x,contents,table[section_id].len-x);
-      memcpy(initial_addr+cnt*record_node_len,contents+table[section_id].len-x,contents->len+x-table[section_id].len);
-   }
-   else memcpy(initial_addr+x,contents,contents->len);
-   //update record_node information
-   for(int i=0;i<block_covered;)
-   {
-      if(p->in_use==1&&p->how_many_blocks!=0)
-      {
-          int k=p->how_many_blocks;
-          i+=k;
-          for(int j=0;j<k;++j)
-          {
-              p->in_use=0;
-              p->how_many_blocks=0;
-              p=(record_node*)(initial_addr+p->next_offset);
-          }
-      }
-      else
-      {
-          i+=1;
-          p->in_use=0;
-          p->how_many_blocks=0;
-          p=(record_node*)(initial_addr+p->next_offset);
-      }
-   }
-   p=(record_node*)(initial_addr+table[section_id].next_write_address);
+   char *q=(char*)contents;
    for(int i=0;i<block_covered;++i)
    {
-       if(i==0)
-       {
-           p->how_many_blocks=block_covered;
+           //write memory
+           memcpy(initial_addr+p->block_offset,q,table[section_id].block_size);
+           q+=table[section_id].block_size;
+           //update record_node information
+           if(i==0) p->how_many_blocks=block_covered;
+           else p->how_many_blocks=0;
            p->in_use=1;
            table[section_id].next_write_address=p->next_offset;
            p=(record_node*)(initial_addr+table[section_id].next_write_address);
-
-       }
-       else
-       {
-          p->in_use=1;
-           table[section_id].next_write_address=p->next_offset;
-           p=(record_node*)(initial_addr+table[section_id].next_write_address);
-
-       }
    }
-
    return 0;
 }
 
@@ -116,19 +81,18 @@ int record_section(int section_id,int block_size,void *addr,int len)
     unsigned int cnt=len/(record_node_len+block_size);
     record_node *current=(record_node*)addr;
     //initialize record_node information
-    for(int i=1;i<=cnt;++i)
+    for(int i=0;i<cnt;++i)
     {
         current->in_use=0;
         current->how_many_blocks=0;
-        if(i==cnt)
+        current->block_offset=record_node_len*cnt+block_size*i;
+        if(i==cnt-1)
         {
             current->next_offset=0;
-            current->block_offset=record_node_len*cnt;
         }
         else
         {
-            current->next_offset=record_node_len*i;
-            current->block_offset=record_node_len*cnt+block_size*i;
+            current->next_offset=record_node_len*(i+1);
         }
         current+=1;
     }
@@ -139,51 +103,50 @@ int record_section_destory(int section_id)
     //do nothing
     return 0;
 }
-void visualization(void* addr, int length, int block_size, char* filename)
+void visualization(void* addr,int length,int block_size,char* filename)
 {
-	FILE *fp; //å®šä¹‰ä¸€ä¸ªæ–‡ä»¶æŒ‡é’ˆ
-	int  num, n; //nè¡¨ç¤ºæ­£åœ¨è¯»çš„blockç¼–å·
-	unsigned char *p, *q; 
-	//å°†ä¼ å…¥åœ°å€èµ‹ç»™æŒ‡é’ˆqï¼Œqç”¨æ¥æŒ‡å‘record_nodeï¼Œpç”¨æ¥æŒ‡å‘record_element
+	FILE *fp; //¶¨ÒåÒ»¸öÎÄ¼şÖ¸Õë
+	int  num, n; //n±íÊ¾ÕıÔÚ¶ÁµÄblock±àºÅ
+	unsigned char *p, *q;
+	//½«´«ÈëµØÖ·¸³¸øÖ¸Õëq£¬qÓÃÀ´Ö¸Ïòrecord_node£¬pÓÃÀ´Ö¸Ïòrecord_element
 	q = (unsigned char*)addr;
-	//numç”¨æ¥å­˜å‚¨è®¡ç®—å‡ºçš„è¯¥åˆ†åŒºçš„blockæ€»æ•°
+	//numÓÃÀ´´æ´¢¼ÆËã³öµÄ¸Ã·ÖÇøµÄblock×ÜÊı
 	num = length / (record_node_len + block_size);
-	//å®šä¹‰ä¸¤ä¸ªç»“æ„ä½“æŒ‡é’ˆ
+	//¶¨ÒåÁ½¸ö½á¹¹ÌåÖ¸Õë
 	record_node *rn = (record_node*)malloc(sizeof(record_node));
 	record_element *re = (record_element*)malloc(sizeof(record_element));
-	//å°†æ–‡ä»¶æŒ‡é’ˆæŒ‡å‘record.xlsæ–‡ä»¶çš„å¼€å¤´
-	fp = fopen(filename , "w");
+	//½«ÎÄ¼şÖ¸ÕëÖ¸Ïòrecord.xlsÎÄ¼şµÄ¿ªÍ·
+	fp = fopen(filename, "w");
 
-	for (n = 0; n < num;) {
+	for (n = 0; n<num;) {
 		memcpy(&rn->in_use, q, sizeof(char));
-		q = q + sizeof(char);
 		memcpy(&rn->block_offset, q, sizeof(int));
-		q = q + sizeof(int);
 		memcpy(&rn->how_many_blocks, q, sizeof(int));
-		q = q - sizeof(char) - sizeof(int);
-		p = (unsigned char*)addr + rn->block_offset;//è®¡ç®—æœ¬æ¡æ—¥å¿—çš„record_elementåœ°å€
-		//åˆ¤æ–­æ˜¯å¦ä¸ºæ—¥å¿—å¼€å§‹
+		n = n + rn->how_many_blocks;//¼ÆËãÏÂÌõÈÕÖ¾µÄn
+		p = (unsigned char*)(addr + rn->block_offset);//¼ÆËã±¾ÌõÈÕÖ¾µÄrecord_elementµØÖ·
+		//ÅĞ¶ÏÊÇ·ñÎªÈÕÖ¾¿ªÊ¼
 		if (rn->in_use == 1 && rn->how_many_blocks != 0) {
-			n = n + rn->how_many_blocks;//è®¡ç®—ä¸‹æ¡æ—¥å¿—çš„å¼€å§‹record_nodeç¼–å·n
-			if (n <= num)
+			if (n < num)
 				q = q + rn->how_many_blocks * record_node_len;
-			//é’ˆå¯¹æ—¥å¿—ä¸€éƒ¨åˆ†åœ¨åˆ†åŒºå‰éƒ¨ï¼Œä¸€éƒ¨åˆ†åœ¨åˆ†åŒºåéƒ¨çš„æƒ…å†µ
-			//å…ˆå°†è¯¥æ—¥å¿—åˆ†åŒºåéƒ¨çš„å†…å®¹å­˜åˆ°ræŒ‡é’ˆä¸­ï¼Œå†å°†åˆ†åŒºå‰éƒ¨çš„å†…å®¹ç´§æ¥ç€
-			//å­˜åˆ°ræŒ‡é’ˆä¸­ï¼Œå†å°†æŒ‡é’ˆrçš„åœ°å€èµ‹ç»™æŒ‡é’ˆp;
+			//Õë¶ÔÈÕÖ¾Ò»²¿·ÖÔÚ·ÖÇøÇ°²¿£¬Ò»²¿·ÖÔÚ·ÖÇøºó²¿µÄÇé¿ö
+			//ÏÈ½«¸ÃÈÕÖ¾·ÖÇøºó²¿µÄÄÚÈİ´æµ½rÖ¸ÕëÖĞ£¬ÔÙ½«·ÖÇøÇ°²¿µÄÄÚÈİ½ô½Ó×Å
+			//´æµ½rÖ¸ÕëÖĞ£¬ÔÙ½«Ö¸ÕërµÄµØÖ·¸³¸øÖ¸Õëp;
 			else {
-				//å®šä¹‰ä¸€ä¸ªæŒ‡é’ˆrå¹¶åˆ†é…å†…å­˜
+				//¶¨ÒåÒ»¸öÖ¸Õër²¢·ÖÅäÄÚ´æ
 				char* r = (char*)malloc(sizeof(rn->how_many_blocks*block_size));
-				int n1, n2, n3;
+				int n1,n2,n3;
 				n1 = num + rn->how_many_blocks - n;
 				n2 = n - num;
 				n3 = n - rn->how_many_blocks;
+				q = q - sizeof((n3 - n2)*record_node_len);
 				memcpy(r, p, sizeof(n1*block_size));
 				p = p - n3 * block_size;
-				memcpy(r + sizeof(n1*block_size), p, sizeof(n2*block_size));
-				p = r;
+				memcpy(r+sizeof(n1*block_size), p, sizeof(n2*block_size));
+				p = (unsigned char*)r;
 				free(r);
 			}
-            //å°†æŒ‡é’ˆpçš„å†…å®¹å­˜å…¥ç»“æ„ä½“æŒ‡é’ˆre
+
+			//½«Ö¸ÕëpµÄÄÚÈİ´æÈë½á¹¹ÌåÖ¸Õëre
 			memcpy(&re->year, p, sizeof(short));
 			p = p + sizeof(short);
 			memcpy(&re->month, p, sizeof(char));
@@ -206,16 +169,13 @@ void visualization(void* addr, int length, int block_size, char* filename)
 			p = p + sizeof(int);
 			memcpy(&re->data, p, re->len - record_element_len);
 
-			//å°†ç»“æ„ä½“çš„å†…å®¹è¯»å…¥æ–‡ä»¶
-			fprintf(fp, "%d\t%c\t%c\t%c\t%c\t%c\t%d\t%d\t%d\t%d\t%s\n", re->year, \
+			//½«½á¹¹ÌåµÄÄÚÈİ¶ÁÈëÎÄ¼ş
+			fprintf(fp, "%d\t%c\t%c\t%c\t%c\t%c\t%d\t%d\t%d\t%d\t%s\n", re->year,\
 				re->month, re->day, re->hour, re->min, re->sec, re->type, re->key, \
 				re->oper, re->len, re->data);
 		}
-		else
-			n = n + 1;
 	}
 	free(rn);
 	free(re);
 	fclose(fp);
 }
-
