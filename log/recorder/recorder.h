@@ -38,6 +38,5 @@ typedef struct _section
 int record(int section_id,int type, int key, int oper,int para_cnt,...);
 int record_section(int section_id,int block_size,void *addr,int len);
 int record_section_destory(int section_id);
-
-void visualization(void* addr,int length,int block_size,char* filename);
+int visualization(void* addr,int len,int block_size,char* filename);
 #endif
