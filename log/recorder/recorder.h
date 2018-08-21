@@ -22,9 +22,10 @@ typedef struct _record_element
 typedef struct _record_node
 {
     unsigned char in_use;
+    unsigned short how_many_blocks;
     unsigned int next_offset;
     unsigned int block_offset;
-    unsigned int how_many_blocks;
+
 }record_node;
 
 typedef struct _section

@@ -15,12 +15,19 @@ int record(int section_id,int type,int key,int oper,int para_cnt,...)
 
     unsigned int para_len;
     char *para;
+    //memcpy(tmp,&para_cnt,sizeof(int));
+    *((int*)tmp)=para_cnt;
 
+    totol_len+=sizeof(int);
     va_start(v_args,para_cnt);
     for(int i=0;i<para_cnt;i++)
     {
         para= va_arg(v_args,char*);
         para_len=va_arg(v_args,unsigned int);
+
+        *((int*)(tmp+totol_len))=para_len;
+
+        totol_len+=sizeof(unsigned int);
         memcpy(tmp+totol_len,para,para_len);
         totol_len+=para_len;
     }
@@ -44,7 +51,6 @@ int record(int section_id,int type,int key,int oper,int para_cnt,...)
     contents->oper=oper;
     contents->len=record_element_len+totol_len;
     memcpy(contents->data,tmp,totol_len);
-    contents->data[totol_len]='\0';
    //compute how many blocks will be covered by the record
    unsigned int block_covered;
    if(contents->len%table[section_id].block_size==0)
@@ -115,9 +121,24 @@ int output(char* filename, record_element* re)
 	fprintf(fp,"%d\t",re->type);
 	fprintf(fp,"%d\t",re->key);
 	fprintf(fp,"%d\t",re->oper);
-	fprintf(fp,"%s\n",re->data);
-	fclose(fp);
-	return 0;
+	char *initial_addr=(char*)re->data;
+    int totol_len=0;
+    int para_cnt=*((int*)initial_addr);
+    totol_len+=sizeof(int);
+    int para_len;
+    char s[MAXLEN];
+    for(int i=0;i<para_cnt;++i)
+    {
+         para_len=*((int*)(initial_addr+totol_len));
+         totol_len+=sizeof(int);
+         memcpy(s,initial_addr+totol_len,para_len);
+         totol_len+=para_len;
+         for(int i=0;i<para_len;++i) fprintf(fp,"%c",s[i]);
+         fprintf(fp,"\t");
+    }
+    fprintf(fp,"\n");
+    fclose(fp);
+    return 0;
 }
 
 int visualization(void* addr,int len,int block_size,char* filename)
@@ -140,7 +161,6 @@ int visualization(void* addr,int len,int block_size,char* filename)
                 record_element* re=(record_element*)record_contents;
                 memcpy(re->data,record_contents+record_element_len,re->len-record_element_len);
                 if(output(filename,re)==-1) return -1;
-
                 free(record_contents);
             }
             else
@@ -148,6 +168,7 @@ int visualization(void* addr,int len,int block_size,char* filename)
                     rn=(record_node*)(initial_addr+rn->next_offset);
                     n+=1;
             }
+
     }
     return 0;
 }
