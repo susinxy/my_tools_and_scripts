@@ -121,6 +121,7 @@ int output(char* filename, record_element* re)
 	fprintf(fp,"%d\t",re->type);
 	fprintf(fp,"%d\t",re->key);
 	fprintf(fp,"%d\t",re->oper);
+	//fprintf(fp,"%s\n",re->data);
 	char *initial_addr=(char*)re->data;
     int totol_len=0;
     int para_cnt=*((int*)initial_addr);
@@ -137,8 +138,8 @@ int output(char* filename, record_element* re)
          fprintf(fp,"\t");
     }
     fprintf(fp,"\n");
-    fclose(fp);
-    return 0;
+	fclose(fp);
+	return 0;
 }
 
 int visualization(void* addr,int len,int block_size,char* filename)
