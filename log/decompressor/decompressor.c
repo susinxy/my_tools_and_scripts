@@ -4,7 +4,7 @@
 #include "decompressor.h"
 // A Huffman tree node
 static unsigned char codes[MAX_CHARACTER+5][MAX_TREE_HT+5];
-
+static unsigned char decompress_contents[1024*1024*10*8+10];
  struct MinHeapNode
 {
     // One of the input characters
@@ -286,7 +286,7 @@ int decompress(void *addr_in,int len_in, void*addr_out, int *len_out)
 
     unsigned char* read_addr=addr_in;
     unsigned char s[READ_LEN+5];
-    unsigned char* decompress_contents=malloc(len_in*MAX_TREE_HT);
+
     size=*(int*)read_addr;
     read_addr+=sizeof(int);
     for(int i=0;i<size;++i)
@@ -325,7 +325,7 @@ int decompress(void *addr_in,int len_in, void*addr_out, int *len_out)
         write_len++;
     }
     *len_out=write_len;
-    free(decompress_contents);
+
     return 0;
 }
 
