@@ -2,9 +2,11 @@
 #include <stdlib.h>
 #include <string.h>
 #include "decompressor.h"
+#include <windows.h>
+#include <time.h>
 // A Huffman tree node
-static unsigned char codes[MAX_CHARACTER+5][MAX_TREE_HT+5];
-static unsigned char decompress_contents[1024*1024*10*8+10];
+static char codes[MAX_CHARACTER+5][MAX_TREE_HT+5];
+static char decompress_contents[1024*1024*10*8+10];
  struct MinHeapNode
 {
     // One of the input characters
@@ -245,17 +247,6 @@ static void HuffmanCodes(unsigned char data[], int freq[], int size)
 
     acquireCodes(root, arr, top);
 }
-
-static int getLen(const unsigned char s[])
-{
-    int nLen = 0;
-    const unsigned char* p = s;
-    while(*p!=0){
-        nLen++;
-        p++;
-    }
-    return nLen;
-}
 static void integer_to_binary(unsigned char s[], unsigned char x)
 {
        for(int i=READ_LEN-1;i>=0;i--)
@@ -264,19 +255,6 @@ static void integer_to_binary(unsigned char s[], unsigned char x)
            x/=2;
        }
        s[READ_LEN]='\0';
-}
-static int find_char(unsigned char* p,int *len)
-{
-    int i;
-    for(i=0;i<MAX_CHARACTER;++i)
-    {
-        if(getLen(codes[i])==0) continue;
-        if(memcmp(codes[i],p,getLen(codes[i]))==0){
-             *len=getLen(codes[i]);
-             break;
-        }
-    }
-    return i;
 }
 int decompress(void *addr_in,int len_in, void*addr_out, int *len_out)
 {
@@ -292,40 +270,53 @@ int decompress(void *addr_in,int len_in, void*addr_out, int *len_out)
     for(int i=0;i<size;++i)
     {
         arr[i]=*read_addr;
-        //printf("%d ",arr[i]);
+
         read_addr++;
         cnt[i]=*((int*)read_addr);
-       // printf("%d\n",cnt[i]);
+
         read_addr+=sizeof(int);
     }
     HuffmanCodes(arr,cnt,size);
 
     len_in-=sizeof(int)+size*(sizeof(int)+sizeof(unsigned char));
 
-    unsigned remainder=*read_addr;
+    unsigned char remainder=*read_addr;
     read_addr++;
     for(int i=0;i<len_in-2;++i)
     {
           integer_to_binary(s,*read_addr);
+
           memcpy(decompress_contents+i*READ_LEN,s,READ_LEN);
           read_addr++;
     }
     integer_to_binary(s,*read_addr);
     memcpy(decompress_contents+(len_in-2)*READ_LEN,s,remainder);
     decompress_contents[(len_in-2)*READ_LEN+remainder]='\0';
-    //printf("%s\n",decompress_contents);
-    unsigned char* p=decompress_contents;
-    int len;
+
     unsigned char* write_addr=addr_out;
     int write_len=0;
-    while(*p!='\0')
+    int covered=0;
+    int len=0;
+    int totol_len=strlen(decompress_contents);
+    while(covered<totol_len)
     {
-        *(write_addr+write_len)=find_char(p,&len);
-        p+=len;
-        write_len++;
+        for(int i=0;i<MAX_CHARACTER;++i)
+        {
+            len=strlen(codes[i]);
+            if(len==0) continue;
+            else if(memcmp(decompress_contents+covered,codes[i],len)==0)
+            {
+                *write_addr=i;
+                write_addr++;
+                covered+=len;
+
+                write_len++;
+                break;
+            }
+        }
+
     }
     *len_out=write_len;
 
     return 0;
 }
-
