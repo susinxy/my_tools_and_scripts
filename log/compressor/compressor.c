@@ -3,8 +3,7 @@
 #include <string.h>
 #include "compressor.h"
 // A Huffman tree node
-static unsigned char codes[MAX_CHARACTER+5][MAX_TREE_HT+5];
-
+static char codes[MAX_CHARACTER+5][MAX_TREE_HT+5];
  struct MinHeapNode
 {
     unsigned char data;
@@ -231,32 +230,20 @@ static int Pow(int a,int b)
         return t*t;
     }
 }
-static unsigned char binary_to_integer(unsigned char *s)
+static unsigned char binary_to_integer(char *s)
 {
     unsigned char ans=0;
-    for(int i=0;i<READ_LEN;++i)
+    for(int i=0;i<WRITE_LEN;++i)
     {
-        ans+=Pow(2,READ_LEN-1-i)*(s[i]=='1'?1:0);
+        ans+=Pow(2,WRITE_LEN-1-i)*(s[i]=='1'?1:0);
     }
     return ans;
 }
 
-static int getLen(const unsigned char s[])
-{
-    int nLen = 0;
-    const unsigned char* p = s;
-    while(*p!='\0')
-    {
-        nLen++;
-        p++;
-    }
-    return nLen;
-}
 int compress(void *addr_in,int len_in,void* addr_out,int *len_out)
 {
     unsigned char arr[MAX_CHARACTER+5];
     int fre[MAX_CHARACTER+5];
-    int cnt[MAX_CHARACTER+5];
     int size=0;
     memset(fre,0,sizeof(fre));
 
@@ -272,38 +259,20 @@ int compress(void *addr_in,int len_in,void* addr_out,int *len_out)
         if(fre[i]!=0)
         {
             arr[size]=i;
-            cnt[size]=fre[i];
+            fre[size]=fre[i];
             size++;
         }
     }
-    HuffmanCodes(arr,cnt,size);
-    int sum=0;
+    HuffmanCodes(arr,fre,size);
+
+    /*int sum=0;
     for(int i=0;i<MAX_CHARACTER;++i)
     {
-        printf("%d\t%d\t%s\n",i,cnt[i],codes[i]);
-        sum+=cnt[i];
+        printf("%d\t%d\t%s\n",i,fre[i],codes[i]);
+        sum+=fre[i];
     }
-    printf("\n%d\n",sum);
+    printf("\n%d\n",sum);*/
 
-
-    unsigned char* compress_contents=malloc(len_in*MAX_TREE_HT);
-
-    p=(unsigned char*)addr_in;
-    int totol_len=0;
-    int str_len=0;
-    for(int i=0;i<len_in;++i)
-    {
-        if(totol_len>=len_in*READ_LEN)
-        {
-             memcpy(addr_out,addr_in,len_in);
-             *len_out=len_in;
-             return -1;
-        }
-        str_len=getLen(codes[*p]);
-        memcpy(compress_contents+totol_len,codes[*p],str_len);
-        totol_len+=str_len;
-        p++;
-    }
 
     unsigned char* write_addr=addr_out;
     *((int*)write_addr)=size;
@@ -311,41 +280,62 @@ int compress(void *addr_in,int len_in,void* addr_out,int *len_out)
     for(int i=0;i<size;++i)
     {
         *write_addr=arr[i];
-        //printf("%d ",*write_addr);
         write_addr++;
-        *((int*)write_addr)=cnt[i];
-       // printf("%d\n",*((int*)write_addr));
+        *((int*)write_addr)=fre[i];
         write_addr+=sizeof(int);
     }
     *len_out=sizeof(int)+size*(sizeof(int)+sizeof(unsigned char));
-
-    unsigned char remainder=totol_len%READ_LEN;
-    int blocks=totol_len/READ_LEN+1;
-     *len_out=*len_out+blocks+1;
-
     if(*len_out>=len_in)
     {
         memcpy(addr_out,addr_in,len_in);
-             *len_out=len_in;
-             return -1;
+        *len_out=len_in;
+        return -1;
     }
 
-    for(int i=0;i<READ_LEN-remainder;++i)
-    *(compress_contents+totol_len+i)='0';
+    p=(unsigned char*)addr_in;
+    int totol_len=0;
+    for(int i=0;i<len_in;++i)
+    {
+        totol_len+=strlen(codes[*p]);
+        p++;
+    }
 
-    int offset=0;
-    unsigned char tmp[READ_LEN+5];
+    unsigned char remainder=totol_len%READ_LEN;
     *write_addr=remainder;
     write_addr++;
-    for(int i=0;i<blocks;++i)
+
+
+    *len_out=*len_out+totol_len/READ_LEN+1+1;
+    if(*len_out>=len_in)
     {
-        memcpy(tmp,compress_contents+offset,READ_LEN);
-        tmp[READ_LEN]='\0';
-        offset+=READ_LEN;
-        *write_addr=binary_to_integer(tmp);
-        write_addr++;
+        memcpy(addr_out,addr_in,len_in);
+        *len_out=len_in;
+        return -1;
     }
-    free(compress_contents);
+
+
+    p=(unsigned char*)addr_in;
+    char binary[WRITE_LEN+5];
+    unsigned int current_len=0;
+    unsigned int str_len=0;
+    for(int i=0;i<len_in;++i)
+    {
+        str_len=strlen(codes[*p]);
+        if(current_len+str_len<READ_LEN)
+        {
+            memcpy(binary+current_len,codes[*p],str_len);
+            current_len+=str_len;
+        }
+        else
+        {
+            memcpy(binary+current_len,codes[*p],WRITE_LEN-current_len);
+            *write_addr=binary_to_integer(binary);
+            write_addr++;
+            memcpy(binary,codes[*p]+WRITE_LEN-current_len,str_len-WRITE_LEN+current_len);
+            current_len=str_len-WRITE_LEN+current_len;
+        }
+        p++;
+    }
     return 0;
 }
 
