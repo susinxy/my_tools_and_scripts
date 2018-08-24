@@ -1,9 +1,7 @@
-#define _CRT_SECURE_NO_WARNINGS
 #include<stdio.h>
 #include <string.h>
 #include <malloc.h>
 #include "visualization.h"
-#include "decompressor.h"
 int output(FILE* fp, record_element* re, int para_num)
 {
 	fprintf(fp, "%d\t", re->year);
@@ -76,25 +74,11 @@ int visualization(void* addr, int len, int block_size)
 	for (int t = 1; t <= para_num; t++)
 		fprintf(fp1, "%d\t", t);
 	fprintf(fp1, "\n");
-	rewind(fp);     /* Íê³ÉÏÔÊ¾ºó£¬fp1µÄÖ¸ÕëÒÑÖ¸µ½ÎÄ¼þµÄÄ©Î²£¬
-					ÎªÁËÍê³É¸´ÖÆ£¬Ê¹file1.cµÄÎ»ÖÃÖ¸ÕëÖØ·µ»ØÎÄ¼þÍ· */
+	rewind(fp);     /* å®Œæˆæ˜¾ç¤ºåŽï¼Œfp1çš„æŒ‡é’ˆå·²æŒ‡åˆ°æ–‡ä»¶çš„æœ«å°¾ï¼Œ
+					ä¸ºäº†å®Œæˆå¤åˆ¶ï¼Œä½¿file1.cçš„ä½ç½®æŒ‡é’ˆé‡è¿”å›žæ–‡ä»¶å¤´ */
 	while (!feof(fp))
 		fputc(fgetc(fp), fp1);
 	fclose(fp);
 	remove(filename);
-	return 0;
-}
-
-int main() {
-	char* filename2 = malloc(30);
-	printf("ÇëÊäÈëÄãÒª´ò¿ªµÄÎÄ¼þÃû¼°Â·¾¶£¬Èçc:\\temp.txt\n");
-	scanf("%s", filename2);
-	FILE* fp2 = fopen(filename2, "r");
-	int size = 0, len = 0, block_size = 52;
-	char* addr = malloc(256);
-	char* buffer = malloc(256);
-	fread(buffer, 1, size, fp2);
-	decompress(buffer, size, addr, len);
-	visualization(addr, len, block_size);
 	return 0;
 }
