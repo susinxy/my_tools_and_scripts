@@ -1,1 +1,0 @@
-/usr/bin/c++    -rdynamic CMakeFiles/recorder_main.dir/main.cc.o CMakeFiles/recorder_main.dir/test/recorder/recorder_test.cc.o  -o recorder_main  -L/home/susin/Public/my_tools_and_scripts/log/gtlib -Wl,-rpath,/home/susin/Public/my_tools_and_scripts/log/gtlib recorder/librecorder.a -lgtest -lpthread 
