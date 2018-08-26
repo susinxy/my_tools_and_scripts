@@ -1,0 +1,24 @@
+#IncludeRegexLine: ^[ 	]*[#%][ 	]*(include|import)[ 	]*[<"]([^">]+)([">])
+
+#IncludeRegexScan: ^.*$
+
+#IncludeRegexComplain: ^$
+
+#IncludeRegexTransform: 
+
+/home/susin/Public/my_tools_and_scripts/log/compressor/compressor.c
+
+/home/susin/Public/my_tools_and_scripts/log/compressor/main_new.c
+main_new.h
+/home/susin/Public/my_tools_and_scripts/log/compressor/main_new.h
+stdio.h
+-
+stdlib.h
+-
+string.h
+-
+
+/home/susin/Public/my_tools_and_scripts/log/compressor/main_new.h
+stdio.h
+-
+

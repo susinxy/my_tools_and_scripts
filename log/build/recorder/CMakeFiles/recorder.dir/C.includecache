@@ -1,0 +1,32 @@
+#IncludeRegexLine: ^[ 	]*[#%][ 	]*(include|import)[ 	]*[<"]([^">]+)([">])
+
+#IncludeRegexScan: ^.*$
+
+#IncludeRegexComplain: ^$
+
+#IncludeRegexTransform: 
+
+/home/susin/Public/my_tools_and_scripts/log/recorder/linkedlist.c
+linkedlist.h
+/home/susin/Public/my_tools_and_scripts/log/recorder/linkedlist.h
+
+/home/susin/Public/my_tools_and_scripts/log/recorder/linkedlist.h
+stdio.h
+-
+stdlib.h
+-
+
+/home/susin/Public/my_tools_and_scripts/log/recorder/recorder.c
+stdarg.h
+-
+stdio.h
+-
+time.h
+-
+string.h
+-
+malloc.h
+-
+linkedlist.h
+/home/susin/Public/my_tools_and_scripts/log/recorder/linkedlist.h
+

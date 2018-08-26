@@ -1,0 +1,2 @@
+/usr/bin/ar qc librecorder.a  CMakeFiles/recorder.dir/linkedlist.c.o CMakeFiles/recorder.dir/recorder.c.o
+/usr/bin/ranlib librecorder.a

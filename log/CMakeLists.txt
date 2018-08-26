@@ -15,3 +15,11 @@ add_subdirectory(compressor)
 add_executable(compressor_main main.cc test/compressor/compressor_test.cc)
 
 target_link_libraries(compressor_main compressor -lgtest -lpthread)
+
+add_subdirectory(visualization)
+add_subdirectory(decompressor)
+
+add_executable(intergration_main main.cc test/intergration/intergration_test.cc)
+
+target_link_libraries(visualization_main compressor decompressor recorder visualization -lgtest -lpthread)
+

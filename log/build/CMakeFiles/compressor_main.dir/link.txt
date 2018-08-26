@@ -1,0 +1,1 @@
+/usr/bin/c++    -rdynamic CMakeFiles/compressor_main.dir/main.cc.o CMakeFiles/compressor_main.dir/test/compressor/compressor_test.cc.o  -o compressor_main  -L/home/susin/Public/my_tools_and_scripts/log/gtlib -Wl,-rpath,/home/susin/Public/my_tools_and_scripts/log/gtlib compressor/libcompressor.a -lgtest -lpthread 
