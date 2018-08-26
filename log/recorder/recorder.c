@@ -3,7 +3,7 @@
 #include <time.h>
 #include <string.h>
 #include "recorder.h"
-#include <malloc.h>
+#include <stdlib.h>
 #define record_node_len sizeof(record_node)
 #define record_element_len sizeof(record_element)
 section table[MAXSIZE];
@@ -51,6 +51,8 @@ int record(int section_id,int type,int key,int oper,int para_cnt,...)
     contents->oper=oper;
     contents->len=record_element_len+totol_len;
     memcpy(contents->data,tmp,totol_len);
+    char *yu=record_contents+contents->len;
+    for(int i=0;i<MAXLEN-contents->len;++i) yu[i]='\0';
    //compute how many blocks will be covered by the record
    unsigned int block_covered;
    if(contents->len%table[section_id].block_size==0)
@@ -108,69 +110,3 @@ int record_section_destory(int section_id)
     //do nothing
     return 0;
 }
-int output(char* filename, record_element* re)
-{
-	FILE *fp=fopen(filename, "a");
-	if(fp==NULL) return -1;
-	fprintf(fp,"%d\t",re->year);
-	fprintf(fp,"%d\t",re->month);
-	fprintf(fp,"%d\t",re->day);
-	fprintf(fp,"%d\t",re->hour);
-	fprintf(fp,"%d\t",re->min);
-	fprintf(fp,"%d\t",re->sec);
-	fprintf(fp,"%d\t",re->type);
-	fprintf(fp,"%d\t",re->key);
-	fprintf(fp,"%d\t",re->oper);
-	//fprintf(fp,"%s\n",re->data);
-	char *initial_addr=(char*)re->data;
-    int totol_len=0;
-    int para_cnt=*((int*)initial_addr);
-    totol_len+=sizeof(int);
-    int para_len;
-    char s[MAXLEN];
-    for(int i=0;i<para_cnt;++i)
-    {
-         para_len=*((int*)(initial_addr+totol_len));
-         totol_len+=sizeof(int);
-         memcpy(s,initial_addr+totol_len,para_len);
-         totol_len+=para_len;
-         for(int i=0;i<para_len;++i) fprintf(fp,"%c",s[i]);
-         fprintf(fp,"\t");
-    }
-    fprintf(fp,"\n");
-	fclose(fp);
-	return 0;
-}
-
-int visualization(void* addr,int len,int block_size,char* filename)
-{
-    unsigned int n,num = len / (record_node_len + block_size);
-    char* initial_addr=(char*)addr;
-    record_node* rn=(record_node*)(initial_addr);
-    for(n=0;n<num;)
-    {
-            if(rn->in_use==1&&rn->how_many_blocks!=0)
-            {
-                n+=rn->how_many_blocks;
-                char *record_contents=malloc(rn->how_many_blocks*block_size);
-                int k=rn->how_many_blocks;
-                for(int i=0;i<k;++i)
-                {
-                    memcpy(record_contents+i*block_size,initial_addr+rn->block_offset,block_size);
-                    rn=(record_node*)(initial_addr+rn->next_offset);
-                }
-                record_element* re=(record_element*)record_contents;
-                memcpy(re->data,record_contents+record_element_len,re->len-record_element_len);
-                if(output(filename,re)==-1) return -1;
-                free(record_contents);
-            }
-            else
-            {
-                    rn=(record_node*)(initial_addr+rn->next_offset);
-                    n+=1;
-            }
-
-    }
-    return 0;
-}
-
