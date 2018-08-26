@@ -2,29 +2,26 @@
 #include <stdlib.h>
 #include <string.h>
 #include "compressor.h"
-// A Huffman tree node
 static  char codes[MAX_CHARACTER+5][MAX_TREE_HT+5];
-static  char compress_contents[1024*1024*10*8+10];
  struct MinHeapNode
 {
     unsigned char data;
-    unsigned freq;
+    int freq;
     struct MinHeapNode *left, *right;
 };
-
 // A Min Heap:  Collection of min heap (or Hufmman tree) nodes
  struct MinHeap
 {
     // Current size of min heap
-    unsigned size;
+    int size;
     // capacity of min heap
-    unsigned capacity;
+    int capacity;
     // Attay of minheap node pointers
     struct MinHeapNode** array;
 };
 
 // A utility function allocate a new min heap node with given character and frequency of the character
-static struct MinHeapNode* newNode(unsigned char data, unsigned freq)
+static struct MinHeapNode* newNode(unsigned char data, int freq)
 {
     struct MinHeapNode* temp= (struct MinHeapNode*)malloc(sizeof(struct MinHeapNode));
     temp->left = temp->right = NULL;
@@ -33,7 +30,7 @@ static struct MinHeapNode* newNode(unsigned char data, unsigned freq)
     return temp;
 }
 // A utility function to create a min heap of given capacity
-static struct MinHeap* createMinHeap(unsigned capacity)
+static struct MinHeap* createMinHeap(int capacity)
 {
 
     struct MinHeap* minHeap= (struct MinHeap*)malloc(sizeof(struct MinHeap));
@@ -231,7 +228,7 @@ static int Pow(int a,int b)
         return t*t;
     }
 }
-static unsigned char binary_to_integer(unsigned char *s)
+static unsigned char binary_to_integer(char *s)
 {
     unsigned char ans=0;
     for(int i=0;i<READ_LEN;++i)
@@ -242,9 +239,8 @@ static unsigned char binary_to_integer(unsigned char *s)
 }
 int compress(void *addr_in,int len_in,void* addr_out,int *len_out)
 {
-    unsigned char arr[MAX_CHARACTER+5];
+    unsigned char data[MAX_CHARACTER+5];
     int fre[MAX_CHARACTER+5];
-    int cnt[MAX_CHARACTER+5];
     int size=0;
     memset(fre,0,sizeof(fre));
 
@@ -259,68 +255,88 @@ int compress(void *addr_in,int len_in,void* addr_out,int *len_out)
     {
         if(fre[i]!=0)
         {
-            arr[size]=i;
-            cnt[size]=fre[i];
+            data[size]=i;
+            fre[size]=fre[i];
             size++;
         }
     }
-    HuffmanCodes(arr,cnt,size);
+    HuffmanCodes(data,fre,size);
 
-    p=(unsigned char*)addr_in;
-    int totol_len=0;
-    int str_len=0;
-    for(int i=0;i<len_in;++i)
-    {
-        if(totol_len>=len_in*READ_LEN)
-        {
-             memcpy(addr_out,addr_in,len_in);
-             *len_out=len_in;
-             return -1;
-        }
-        str_len=strlen(codes[*p]);
-        memcpy(compress_contents+totol_len,codes[*p],str_len);
-        totol_len+=str_len;
-        p++;
-    }
-    unsigned char* write_addr=addr_out;
+        unsigned char* write_addr=addr_out;
     *((int*)write_addr)=size;
     write_addr+=sizeof(int);
     for(int i=0;i<size;++i)
     {
-        *write_addr=arr[i];
+        *write_addr=data[i];
         write_addr++;
-        *((int*)write_addr)=cnt[i];
+        *((int*)write_addr)=fre[i];
         write_addr+=sizeof(int);
     }
     *len_out=sizeof(int)+size*(sizeof(int)+sizeof(unsigned char));
-    unsigned char remainder=totol_len%READ_LEN;
-    int blocks=totol_len/READ_LEN+1;
-     *len_out=*len_out+blocks+1;
-
-
     if(*len_out>=len_in)
     {
         memcpy(addr_out,addr_in,len_in);
-             *len_out=len_in;
-             return -1;
+        *len_out=len_in;
+        return -1;
     }
 
-    for(int i=0;i<READ_LEN-remainder;++i)
-    *(compress_contents+totol_len+i)='0';
+    p=(unsigned char*)addr_in;
+    int totol_len=0;
+    for(int i=0;i<len_in;++i)
+    {
+        totol_len+=strlen(codes[*p]);
+        p++;
+    }
 
-
-
-    int offset=0;
-    unsigned char tmp[READ_LEN+5];
+    unsigned char remainder=totol_len%READ_LEN;
     *write_addr=remainder;
     write_addr++;
-    for(int i=0;i<blocks;++i)
+
+
+    *len_out=*len_out+totol_len/READ_LEN+1+1;
+    if(*len_out>=len_in)
     {
-        memcpy(tmp,compress_contents+offset,READ_LEN);
-        tmp[READ_LEN]='\0';
-        offset+=READ_LEN;
-        *write_addr=binary_to_integer(tmp);
-        write_addr++;
+        memcpy(addr_out,addr_in,len_in);
+        *len_out=len_in;
+        return -1;
     }
+
+    p=(unsigned char*)addr_in;
+    char tmp[MAX_CHARACTER*2+5];
+    char buffer[WRITE_LEN+5];
+    char binary[WRITE_LEN+5];
+    int current_len=0;
+    int str_len=0;
+    int count=0;
+    for(int i=0;i<len_in;++i)
+    {
+        str_len=strlen(codes[*p]);
+        if(current_len+str_len<WRITE_LEN)
+        {
+
+            memcpy(tmp+current_len,codes[*p],str_len);
+            current_len+=str_len;
+        }
+        else
+        {
+            memcpy(tmp+current_len,codes[*p],str_len);
+            current_len+=str_len;
+            count=current_len/WRITE_LEN;
+            for(int j=0;j<count;++j)
+            {
+                   memcpy(binary,tmp+j*WRITE_LEN,WRITE_LEN);
+                   *write_addr=binary_to_integer(binary);
+                   write_addr++;
+            }
+            current_len=current_len%WRITE_LEN;
+            memcpy(buffer,tmp+count*WRITE_LEN,current_len);
+            memcpy(tmp,buffer,current_len);
+        }
+        p++;
+    }
+    for(int i=0;i<WRITE_LEN-remainder;++i) tmp[current_len+i]='0';
+    memcpy(binary,tmp,WRITE_LEN);
+    *write_addr=binary_to_integer(binary);
+    write_addr++;
     return 0;
 }
