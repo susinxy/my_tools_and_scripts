@@ -48,6 +48,8 @@ int record(int section_id,int type,int key,int oper,int para_cnt,...)
     contents->oper=oper;
     contents->len=record_element_len+total_len;
     memcpy(contents->data,tmp,total_len);
+    char *yu=record_contents+contents->len;
+    for(int i=0;i<MAXLEN-contents->len;++i) yu[i]='\0';
     //if the record is too long to be contained by the whole section,then return -1
    int cnt=table[section_id].len/(table[section_id].block_size+record_node_len);
    if(contents->len>cnt*table[section_id].block_size) return -1;
