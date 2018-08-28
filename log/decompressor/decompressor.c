@@ -2,252 +2,151 @@
 #include <stdlib.h>
 #include <string.h>
 #include "decompressor.h"
-#include <windows.h>
 #include <time.h>
-// A Huffman tree node
-static char codes[MAX_CHARACTER+5][MAX_TREE_HT+5];
+
+// ****** Global Variables ******
+static char codes[MAX_CHAR + 5][MAX_TREE_HT + 5];  // within the range of ASCII codes(MAX_CHAR = 256), and the length of tree height maximized to 256;
 static char decompress_contents[1024*1024*10*8+10];
- struct MinHeapNode
-{
-    // One of the input characters
-    unsigned char data;
-    // Frequency of the character
-    unsigned freq;
-    // Left and right child of this node
-    struct MinHeapNode *left, *right;
+
+
+// ****** Struct Denotation ******
+// MinHeapSorting: MinHeapNode
+struct MinHeapNode{
+    unsigned char data;                 // storage of the character stored at the node
+    int freq;                           // amount of the character that appears in the original text
+    struct MinHeapNode *left, *right;       // linking to left and right child node of the node in question
+};
+// MinHeapSorting: MinHeap
+struct MinHeap{
+    int size;                       // the current size of the min heap
+    int capacity;                   // capacity of the min heap
+    struct MinHeapNode** array;        // array of minheap node pointers
 };
 
-// A Min Heap:  Collection of
-// min heap (or Hufmman tree) nodes
- struct MinHeap
-{
-    // Current size of min heap
-    unsigned size;
-    // capacity of min heap
-    unsigned capacity;
-    // Attay of minheap node pointers
-    struct MinHeapNode** array;
-};
 
-// A utility function allocate a new
-// min heap node with given character
-// and frequency of the character
-static struct MinHeapNode* newNode(unsigned char data, unsigned freq)
-{
-    struct MinHeapNode* temp= (struct MinHeapNode*)malloc(sizeof(struct MinHeapNode));
-    temp->left = temp->right = NULL;
+
+// ****** Function Bundle ******
+// *MinHeap* FUNC newNode: initialize the new node with character it stores and how frequently it has appeared in the given text
+static struct MinHeapNode* newNode(unsigned char data, int freq){
+    struct MinHeapNode* temp = (struct MinHeapNode*)malloc(sizeof(struct MinHeapNode));
     temp->data = data;
+    temp->left = temp->right = NULL;
     temp->freq = freq;
     return temp;
-}
-
-// A utility function to create
-// a min heap of given capacity
-static struct MinHeap* createMinHeap(unsigned capacity)
-{
-
-    struct MinHeap* minHeap= (struct MinHeap*)malloc(sizeof(struct MinHeap));
-    // current size is 0
+};
+// *MinHeap* FUNC createMinHeap: construct the Min Heap
+static struct MinHeap* createMinHeap(int capacity){
+    struct MinHeap* minHeap = (struct MinHeap*)malloc(sizeof(struct MinHeap));
     minHeap->size = 0;
-
     minHeap->capacity = capacity;
-
     minHeap->array= (struct MinHeapNode**)malloc(minHeap->capacity * sizeof(struct MinHeapNode*));
     return minHeap;
 }
-
-// A utility function to
-// swap two min heap nodes
-static void swapMinHeapNode(struct MinHeapNode** a,struct MinHeapNode** b)
-{
-
-    struct MinHeapNode* t = *a;
+// *MinHeap* FUNC swapMinHeapNode: switch the position of two MinHeap nodes
+static void swapMinHeapNode(struct MinHeapNode** a, struct MinHeapNode** b){
+    struct MinHeapNode* mediate = *a;
     *a = *b;
-    *b = t;
+    *b = mediate;
 }
-// The standard minHeapify function.
-static void minHeapify(struct MinHeap* minHeap, int idx)
-{
-
-    int smallest = idx;
-    int left = 2 * idx + 1;
-    int right = 2 * idx + 2;
-
-    if (left < minHeap->size && minHeap->array[left]->freq < minHeap->array[smallest]->freq)
-        smallest = left;
-
-    if (right < minHeap->size && minHeap->array[right]->freq < minHeap->array[smallest]->freq)
-        smallest = right;
-
-    if (smallest != idx)
-    {
-        swapMinHeapNode(&minHeap->array[smallest],&minHeap->array[idx]);
+// *MinHeap* FUNC minHeapify
+static void minHeapify(struct MinHeap* minHeap, int index){
+    int smallest = index;
+    int left = 2 * index + 1;
+    int right = 2 * index + 2;
+    if(left < minHeap->size && minHeap->array[left]->freq < minHeap->array[smallest]->freq) smallest = left;
+    if(right < minHeap->size && minHeap->array[right]->freq < minHeap->array[smallest]->freq) smallest = right;
+    // reiterate the operation until the smallest node is placed at the root
+    if (smallest != index){
+        swapMinHeapNode(&minHeap->array[smallest], &minHeap->array[index]);
         minHeapify(minHeap, smallest);
     }
 }
-
-// A utility function to check
-// if size of heap is 1 or not
-static int isSizeOne(struct MinHeap* minHeap)
-{
-    return (minHeap->size == 1);
+// *MinHeap* FUNC isSizeOne: check if the size of the heap is 1 or not
+static int isSizeOne(struct MinHeap* minHeap) {
+    return (minHeap->size == 1) ;   // return 1 if the heap size surely dwindles to 1
 }
-// A standard function to extract
-// minimum value node from heap
-static struct MinHeapNode* extractMin(struct MinHeap* minHeap)
-{
-
-    struct MinHeapNode* temp = minHeap->array[0];
-    minHeap->array[0]= minHeap->array[minHeap->size - 1];
-    --minHeap->size;
-    minHeapify(minHeap, 0);
-    return temp;
+// *MinHeap* FUNC extractMin: the obtain the node with the minimum value from the heap
+static struct MinHeapNode* extractMin(struct MinHeap* minHeap){
+    struct MinHeapNode* temp = minHeap->array[0];   // taking the least frequently appearing node from the heap
+    minHeap->array[0] = minHeap->array[minHeap->size - 1];  // replacing the previoius root spot with the largest leaf
+    --minHeap->size;    // shrink the heap size 1 unit smaller
+    minHeapify(minHeap, 0);     // rearrage the heap and sink the leaf node to the leaf again
+    return temp;    // new heap with size (n - 1)
 }
-
-// A utility function to insert
-// a new node to Min Heap
-static void insertMinHeap(struct MinHeap* minHeap,struct MinHeapNode* minHeapNode)
-{
-
-    ++minHeap->size;
-    int i = minHeap->size - 1;
-
-    while (i && minHeapNode->freq < minHeap->array[(i - 1) / 2]->freq)
-    {
-        minHeap->array[i] = minHeap->array[(i - 1) / 2];
+// *MinHeap* FUNC insertMinHeap: insert new nodes into the heap
+static void insertMinHeap(struct MinHeap* minHeap, struct MinHeapNode* minHeapNode){
+    ++minHeap->size;        // size incrementing to 1 unit larger
+    int i = minHeap->size - 1;          // placing the node firstly to the largest leaf
+    while(i && minHeapNode->freq < minHeap->array[(i-1)/2]->freq){
+        minHeap->array[i] = minHeap->array[(i-1)/2];
         i = (i - 1) / 2;
     }
     minHeap->array[i] = minHeapNode;
 }
-
-// A standard funvtion to build min heap
-static void buildMinHeap(struct MinHeap* minHeap)
-{
-
+// *MinHeap* FUNC buildMinHeap: build up the min heap
+static void buildMinHeap(struct MinHeap* minHeap){
     int n = minHeap->size - 1;
-    for (int i = (n - 1) / 2; i >= 0; --i)
-        minHeapify(minHeap, i);
+    for(int i = (n-1)/2; i >= 0; --i) minHeapify(minHeap, i);
 }
-
-
-// Utility function to check if this node is leaf
-static int isLeaf(struct MinHeapNode* root)
-{
+// *MinHeap* FUNC isLeaf: check whether the node is a leaf node(considering the children nodes)
+static int isLeaf(struct MinHeapNode* root){
     return !(root->left) && !(root->right);
 }
-
-// Creates a min heap of capacity
-// equal to size and inserts all character of
-// data[] in min heap. Initially size of
-// min heap is equal to capacity
-static struct MinHeap* createAndBuildMinHeap(unsigned char data[], int freq[], int size)
-
-{
-
+// *MinHeap* FUNC createAndBuildMinHeap: build a min heap of capacity and insert all characters from data[] into the heap
+static struct MinHeap* createAndBuildMinHeap(unsigned char data[], int freq[], int size){
     struct MinHeap* minHeap = createMinHeap(size);
-
-    for (int i = 0; i < size; ++i)
+    for(int i = 0; i < size; ++i)
         minHeap->array[i] = newNode(data[i], freq[i]);
-
     minHeap->size = size;
     buildMinHeap(minHeap);
-
     return minHeap;
 }
 
-// The main function that builds Huffman tree
-static struct MinHeapNode* buildHuffmanTree(unsigned char data[], int freq[], int size)
 
-{
+
+// *HuffmanTree* FUNC buildHuffmanTree: construct the huffman tree
+static struct MinHeapNode* buildHuffmanTree(unsigned char data[], int freq[], int size){
     struct MinHeapNode *left, *right, *top;
-
-    // Step 1: Create a min heap of capacity
-    // equal to size.  Initially, there are
-    // modes equal to size.
+    // #1 create a min heap with the capacity equal to size
     struct MinHeap* minHeap = createAndBuildMinHeap(data, freq, size);
-
-    // Iterate while size of heap doesn't become 1
-    while (!isSizeOne(minHeap))
-    {
-
-        // Step 2: Extract the two minimum
-        // freq items from min heap
+    // iterate until the size becomes 1(flag)
+    while(!isSizeOne(minHeap)){
+        // #2 obtain the 2 least frequent nodes from the Min Heap
         left = extractMin(minHeap);
         right = extractMin(minHeap);
-
-        // Step 3:  Create a new internal
-        // node with frequency equal to the
-        // sum of the two nodes frequencies.
-        // Make the two extracted node as
-        // left and right children of this new node.
-        // Add this node to the min heap
-        // '$' is a special value for internal nodes, not used
+        // #3 create internal nodes that are sums-up of 2 children nodes
         top = newNode('$', left->freq + right->freq);
-
         top->left = left;
         top->right = right;
-
         insertMinHeap(minHeap, top);
     }
-
-    // Step 4: The remaining node is the
-    // root node and the tree is complete.
+    // #4 finally obtain the least frequent root node
     return extractMin(minHeap);
 }
-
-// Prints huffman codes from the root of Huffman Tree.
-// It uses arr[] to store codes
-static void acquireCodes(struct MinHeapNode* root, int arr[], int top)
-
-{
-
-    // Assign 0 to left edge and recur
-    if (root->left)
-    {
+// *HuffmanTree* FUNC acquireCodes: encode the characters with the tree built
+static void acquireCodes(struct MinHeapNode* root, int arr[], int top){
+    if (root->left){
         arr[top] = 0;
         acquireCodes(root->left, arr, top + 1);
     }
-
-    // Assign 1 to right edge and recur
-    if (root->right)
-    {
+    if (root->right){
         arr[top] = 1;
         acquireCodes(root->right, arr, top + 1);
     }
-
-    // If this is a leaf node, then
-    // it contains one of the input
-    // characters, print the character
-    // and its code from arr[]
-
-    /*//////////////////////////////////////////////////////what if top>MAX_TREE_HT/////////////////////////////*/
-    if (isLeaf(root))
-    {
-
+    if(isLeaf(root)){
+        // when reached the leaf node, designate the value of Huffman codes to the global variable: codes[][]
         for(int i=0;i<top;++i)
-        {
-            codes[root->data][i]=arr[i]+'0';
-        }
-        codes[root->data][top]='\0';
+            codes[root->data][i] = arr[i] + '0';
+        codes[root->data][top] = '\0';  // the "floor" rank of the node infers the length of its huffman code
     }
 }
-
-// The main function that builds a
-// Huffman Tree and print codes by traversing
-// the built Huffman Tree
-static void HuffmanCodes(unsigned char data[], int freq[], int size)
-
-{
-    // Construct Huffman Tree
-    struct MinHeapNode* root= buildHuffmanTree(data, freq, size);
-
-    // Print Huffman codes using
-    // the Huffman tree built above
+// *HuffmanTree* FUNC HuffmanCodes: build the huffman and acquire its huffman codes
+static void HuffmanCodes(unsigned char data[], int freq[], int size){
+    struct MinHeapNode* root = buildHuffmanTree(data, freq, size);      // the array of characters and their frequencies as well as maximum size
     int arr[MAX_TREE_HT], top = 0;
-
     acquireCodes(root, arr, top);
 }
-static void integer_to_binary(unsigned char s[], unsigned char x)
+static void integer_to_binary(unsigned char s[], unsigned char x)//binary string(8 bits) to an integer(0-255)
 {
        for(int i=READ_LEN-1;i>=0;i--)
        {
@@ -256,10 +155,11 @@ static void integer_to_binary(unsigned char s[], unsigned char x)
        }
        s[READ_LEN]='\0';
 }
+
 int decompress(void *addr_in,int len_in, void*addr_out, int *len_out)
 {
-    unsigned char arr[MAX_CHARACTER+5];
-    int cnt[MAX_CHARACTER+5];
+    unsigned char arr[MAX_CHAR+5];//valid characters that have benn coded
+    int cnt[MAX_CHAR+5];//the frequncy of valid characters
     int size=0;
 
     unsigned char* read_addr=addr_in;
@@ -270,22 +170,19 @@ int decompress(void *addr_in,int len_in, void*addr_out, int *len_out)
     for(int i=0;i<size;++i)
     {
         arr[i]=*read_addr;
-
         read_addr++;
         cnt[i]=*((int*)read_addr);
-
         read_addr+=sizeof(int);
     }
-    HuffmanCodes(arr,cnt,size);
+    HuffmanCodes(arr,cnt,size);//acquire the huffman codes
 
+    //*************** acquire the decompress_contents in binary form**************//
     len_in-=sizeof(int)+size*(sizeof(int)+sizeof(unsigned char));
-
     unsigned char remainder=*read_addr;
     read_addr++;
     for(int i=0;i<len_in-2;++i)
     {
           integer_to_binary(s,*read_addr);
-
           memcpy(decompress_contents+i*READ_LEN,s,READ_LEN);
           read_addr++;
     }
@@ -293,14 +190,15 @@ int decompress(void *addr_in,int len_in, void*addr_out, int *len_out)
     memcpy(decompress_contents+(len_in-2)*READ_LEN,s,remainder);
     decompress_contents[(len_in-2)*READ_LEN+remainder]='\0';
 
+    //********** decode: change the binary form to integer form and write memory
     unsigned char* write_addr=addr_out;
     int write_len=0;
     int covered=0;
     int len=0;
-    int totol_len=strlen(decompress_contents);
-    while(covered<totol_len)
+    int total_len=strlen(decompress_contents);
+    while(covered<total_len)
     {
-        for(int i=0;i<MAX_CHARACTER;++i)
+        for(int i=0;i<MAX_CHAR;++i)
         {
             len=strlen(codes[i]);
             if(len==0) continue;
@@ -309,12 +207,10 @@ int decompress(void *addr_in,int len_in, void*addr_out, int *len_out)
                 *write_addr=i;
                 write_addr++;
                 covered+=len;
-
                 write_len++;
                 break;
             }
         }
-
     }
     *len_out=write_len;
 
