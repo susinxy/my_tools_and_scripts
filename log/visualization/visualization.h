@@ -32,7 +32,7 @@ extern "C" {
 
 	}record_node;
 
-	int visualization(void* addr, int len, int block_size);
+	int visualization(void* addr, int len);
 #ifdef __cplusplus
 }
 #endif

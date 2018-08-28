@@ -34,11 +34,11 @@ int output(FILE* fp, record_element* re, int para_num)
 	return para_num;
 }
 
-int visualization(void* addr, int len, int block_size)
+int visualization(void* addr, int len)
 {
 	char* initial_addr = (char*)addr;
 	record_node* rn = (record_node*)(initial_addr);
-	block_size = rn->block_size;
+	int block_size = rn->block_size;
 	unsigned int n, num = len / (record_node_len + block_size), para_num = 0;
 	char* filename = "out.xls";
 	FILE *fp = fopen(filename, "w+");
