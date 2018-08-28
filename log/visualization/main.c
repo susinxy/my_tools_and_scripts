@@ -17,7 +17,6 @@ int main()
 	int de_len_out;
 	int x;
 	int de_len_in = 0;
-	int block_size = 0;
 	while (fscanf(fp, "%d", &x) != EOF)
 	{
 	//printf("%d\n",x);
@@ -28,7 +27,7 @@ int main()
 	printf("%d\n", de_len_in);
 	decompress(de_addr_in, de_len_in, de_addr_out, &de_len_out);
 	printf("length after decompress: %d\n", de_len_out);
-	visualization(de_addr_out, de_len_out, block_size);
+	visualization(de_addr_out, de_len_out);
 	fclose(fp);
 	free(filename);
 	return 0;

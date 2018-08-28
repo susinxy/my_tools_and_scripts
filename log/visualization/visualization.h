@@ -3,7 +3,6 @@
 #ifdef __cplusplus
 extern "C" {
 #endif
-#define MAXSIZE 128
 #define MAXLEN  10240
 #define record_node_len sizeof(record_node)
 #define record_element_len sizeof(record_element)
@@ -32,7 +31,7 @@ extern "C" {
 
 	}record_node;
 
-	int visualization(void* addr, int len, int block_size);
+	int visualization(void* addr, int len);
 #ifdef __cplusplus
 }
 #endif
