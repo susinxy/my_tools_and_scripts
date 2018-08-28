@@ -24,14 +24,15 @@ extern "C" {
 
 	typedef struct _record_node
 	{
+		unsigned short block_size;
 		unsigned char in_use;
-		unsigned short how_many_blocks;
+		unsigned char how_many_blocks;
 		unsigned int next_offset;
 		unsigned int block_offset;
 
 	}record_node;
 
-int visualization(void* addr, int len, int block_size);
+	int visualization(void* addr, int len, int block_size);
 #ifdef __cplusplus
 }
 #endif

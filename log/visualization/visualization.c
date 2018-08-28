@@ -36,9 +36,10 @@ int output(FILE* fp, record_element* re, int para_num)
 
 int visualization(void* addr, int len, int block_size)
 {
-	unsigned int n, num = len / (record_node_len + block_size), para_num = 0;
 	char* initial_addr = (char*)addr;
 	record_node* rn = (record_node*)(initial_addr);
+	block_size = rn->block_size;
+	unsigned int n, num = len / (record_node_len + block_size), para_num = 0;
 	char* filename = "out.xls";
 	FILE *fp = fopen(filename, "w+");
 	if (fp == NULL) return -1;
@@ -75,10 +76,11 @@ int visualization(void* addr, int len, int block_size)
 		fprintf(fp1, "%d\t", t);
 	fprintf(fp1, "\n");
 	rewind(fp);     /* 完成显示后，fp1的指针已指到文件的末尾，
-					为了完成复制，使file1.c的位置指针重返回文件头 */
+					//为了完成复制，使file1.c的位置指针重返回文件头 */
 	while (!feof(fp))
 		fputc(fgetc(fp), fp1);
 	fclose(fp);
+	fclose(fp1);
 	remove(filename);
 	return 0;
 }

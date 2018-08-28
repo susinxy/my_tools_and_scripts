@@ -27,7 +27,7 @@ typedef struct _record_node
 {
     unsigned short block_size;
     unsigned char in_use;
-    unsigned short how_many_blocks;
+    unsigned char how_many_blocks;
     unsigned int next_offset;
     unsigned int block_offset;
 
