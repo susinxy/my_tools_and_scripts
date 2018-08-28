@@ -56,6 +56,8 @@ int record(int section_id,int type,int key,int oper,int para_cnt,...)
    if(contents->len%table[section_id].block_size==0)
     block_covered=contents->len/table[section_id].block_size;
    else block_covered=contents->len/table[section_id].block_size+1;
+    //if the record occupies 256 blocks or even more,return -2
+   if(block_covered>MAX_BLOCK_COVERED) return -2;
 
    //mark the blocks which will be rewrite
    char *initial_addr=(char *)table[section_id].addr;
