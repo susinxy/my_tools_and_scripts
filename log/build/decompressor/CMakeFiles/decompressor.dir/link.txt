@@ -1,2 +1,0 @@
-/usr/bin/ar qc libdecompressor.a  CMakeFiles/decompressor.dir/decompressor.c.o
-/usr/bin/ranlib libdecompressor.a
