@@ -5,6 +5,7 @@ extern "C" {
 #endif
 #define MAX_SECTION 127    //128 sections maximumn,section id range from 0 to 127
 #define MAX_BLOCK_SIZE 65535 //max integer unsighed short can represent,block size range from 1 to 65535
+#define MAX_BLOCK_COVERED 255//max integer unsighed char can represent,a record at most occupies 255 blocks
 #define MAXLEN  10240
 #define record_node_len sizeof(record_node)
 #define record_element_len sizeof(record_element)
@@ -48,6 +49,7 @@ int record_section(int section_id,int block_size,void *addr,int len);
 
 
 //if the record is too long to be contained by the whole section,return -1
+//if the record occupies 256 blocks or even more,return -2
 //if write the record successfully, return 0
 int record(int section_id,int type,int key, int oper,int para_cnt,...);
 
