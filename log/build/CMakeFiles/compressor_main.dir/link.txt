@@ -1,0 +1,1 @@
+/usr/bin/c++      CMakeFiles/compressor_main.dir/main.cc.o CMakeFiles/compressor_main.dir/test/compressor/compressor_test.cc.o  -o compressor_main  -L/home/zby/my_tools_and_scripts/log/gtlib -rdynamic compressor/libcompressor.a decompressor/libdecompressor.a -lgtest -lpthread -Wl,-rpath,/home/zby/my_tools_and_scripts/log/gtlib 

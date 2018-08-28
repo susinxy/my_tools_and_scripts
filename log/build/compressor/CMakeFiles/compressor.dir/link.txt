@@ -1,0 +1,2 @@
+/usr/bin/ar qc libcompressor.a  CMakeFiles/compressor.dir/main_new.c.o CMakeFiles/compressor.dir/compressor.c.o
+/usr/bin/ranlib libcompressor.a

@@ -1,0 +1,34 @@
+#IncludeRegexLine: ^[ 	]*#[ 	]*(include|import)[ 	]*[<"]([^">]+)([">])
+
+#IncludeRegexScan: ^.*$
+
+#IncludeRegexComplain: ^$
+
+#IncludeRegexTransform: 
+
+/home/zby/my_tools_and_scripts/log/recorder/linkedlist.c
+linkedlist.h
+/home/zby/my_tools_and_scripts/log/recorder/linkedlist.h
+
+/home/zby/my_tools_and_scripts/log/recorder/linkedlist.h
+stdio.h
+-
+stdlib.h
+-
+
+/home/zby/my_tools_and_scripts/log/recorder/recorder.c
+stdarg.h
+-
+stdio.h
+-
+time.h
+-
+string.h
+-
+recorder.h
+/home/zby/my_tools_and_scripts/log/recorder/recorder.h
+malloc.h
+-
+
+/home/zby/my_tools_and_scripts/log/recorder/recorder.h
+

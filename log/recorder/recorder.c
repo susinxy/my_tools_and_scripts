@@ -4,35 +4,32 @@
 #include <string.h>
 #include "recorder.h"
 #include <malloc.h>
-#define record_node_len sizeof(record_node)
-#define record_element_len sizeof(record_element)
-section table[MAXSIZE];
+
+section table[MAX_SECTION];
+char tmp[MAXLEN];
+char record_contents[MAXLEN];
 int record(int section_id,int type,int key,int oper,int para_cnt,...)
 {
-    char tmp[MAXLEN];
-    unsigned int totol_len=0;
+    unsigned int total_len=0;
     va_list v_args;
-
     unsigned int para_len;
     char *para;
-    //memcpy(tmp,&para_cnt,sizeof(int));
     *((int*)tmp)=para_cnt;
-
-    totol_len+=sizeof(int);
+    total_len+=sizeof(int);
     va_start(v_args,para_cnt);
     for(int i=0;i<para_cnt;i++)
     {
         para= va_arg(v_args,char*);
         para_len=va_arg(v_args,unsigned int);
 
-        *((int*)(tmp+totol_len))=para_len;
+        *((int*)(tmp+total_len))=para_len;
 
-        totol_len+=sizeof(unsigned int);
-        memcpy(tmp+totol_len,para,para_len);
-        totol_len+=para_len;
+        total_len+=sizeof(unsigned int);
+        memcpy(tmp+total_len,para,para_len);
+        total_len+=para_len;
     }
     va_end(v_args);
-    char record_contents[MAXLEN];
+
     //here variable contents means a record which will be written into memory
     record_element *contents=(record_element*)record_contents;
     //Acquire system time
@@ -49,13 +46,20 @@ int record(int section_id,int type,int key,int oper,int para_cnt,...)
     contents->type=type;
     contents->key=key;
     contents->oper=oper;
-    contents->len=record_element_len+totol_len;
-    memcpy(contents->data,tmp,totol_len);
-   //compute how many blocks will be covered by the record
+    contents->len=record_element_len+total_len;
+    memcpy(contents->data,tmp,total_len);
+    char *yu=record_contents+contents->len;
+    for(int i=0;i<MAXLEN-contents->len;++i) yu[i]='\0';
+    //if the record is too long to be contained by the whole section,then return -1
+   int cnt=table[section_id].len/(table[section_id].block_size+record_node_len);
+   if(contents->len>cnt*table[section_id].block_size) return -1;
+    //compute how many blocks will be covered by the record
    unsigned int block_covered;
    if(contents->len%table[section_id].block_size==0)
     block_covered=contents->len/table[section_id].block_size;
    else block_covered=contents->len/table[section_id].block_size+1;
+    //if the record occupies 256 blocks or even more,return -2
+   if(block_covered>MAX_BLOCK_COVERED) return -2;
 
    //mark the blocks which will be rewrite
    char *initial_addr=(char *)table[section_id].addr;
@@ -77,6 +81,8 @@ int record(int section_id,int type,int key,int oper,int para_cnt,...)
 
 int record_section(int section_id,int block_size,void *addr,int len)
 {
+    if(section_id<0||section_id>MAX_SECTION) return -1;
+    if(block_size<=0||block_size>MAX_BLOCK_SIZE) return -2;
     //record the information about the section
     table[section_id].block_size=block_size;
     table[section_id].addr=addr;
@@ -88,6 +94,7 @@ int record_section(int section_id,int block_size,void *addr,int len)
     //initialize record_node information
     for(int i=0;i<cnt;++i)
     {
+        current->block_size=block_size;
         current->in_use=0;
         current->how_many_blocks=0;
         current->block_offset=record_node_len*cnt+block_size*i;
@@ -108,69 +115,3 @@ int record_section_destory(int section_id)
     //do nothing
     return 0;
 }
-int output(char* filename, record_element* re)
-{
-	FILE *fp=fopen(filename, "a");
-	if(fp==NULL) return -1;
-	fprintf(fp,"%d\t",re->year);
-	fprintf(fp,"%d\t",re->month);
-	fprintf(fp,"%d\t",re->day);
-	fprintf(fp,"%d\t",re->hour);
-	fprintf(fp,"%d\t",re->min);
-	fprintf(fp,"%d\t",re->sec);
-	fprintf(fp,"%d\t",re->type);
-	fprintf(fp,"%d\t",re->key);
-	fprintf(fp,"%d\t",re->oper);
-	//fprintf(fp,"%s\n",re->data);
-	char *initial_addr=(char*)re->data;
-    int totol_len=0;
-    int para_cnt=*((int*)initial_addr);
-    totol_len+=sizeof(int);
-    int para_len;
-    char s[MAXLEN];
-    for(int i=0;i<para_cnt;++i)
-    {
-         para_len=*((int*)(initial_addr+totol_len));
-         totol_len+=sizeof(int);
-         memcpy(s,initial_addr+totol_len,para_len);
-         totol_len+=para_len;
-         for(int i=0;i<para_len;++i) fprintf(fp,"%c",s[i]);
-         fprintf(fp,"\t");
-    }
-    fprintf(fp,"\n");
-	fclose(fp);
-	return 0;
-}
-
-int visualization(void* addr,int len,int block_size,char* filename)
-{
-    unsigned int n,num = len / (record_node_len + block_size);
-    char* initial_addr=(char*)addr;
-    record_node* rn=(record_node*)(initial_addr);
-    for(n=0;n<num;)
-    {
-            if(rn->in_use==1&&rn->how_many_blocks!=0)
-            {
-                n+=rn->how_many_blocks;
-                char *record_contents=malloc(rn->how_many_blocks*block_size);
-                int k=rn->how_many_blocks;
-                for(int i=0;i<k;++i)
-                {
-                    memcpy(record_contents+i*block_size,initial_addr+rn->block_offset,block_size);
-                    rn=(record_node*)(initial_addr+rn->next_offset);
-                }
-                record_element* re=(record_element*)record_contents;
-                memcpy(re->data,record_contents+record_element_len,re->len-record_element_len);
-                if(output(filename,re)==-1) return -1;
-                free(record_contents);
-            }
-            else
-            {
-                    rn=(record_node*)(initial_addr+rn->next_offset);
-                    n+=1;
-            }
-
-    }
-    return 0;
-}
-

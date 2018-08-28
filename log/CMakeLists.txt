@@ -11,7 +11,8 @@ add_executable(recorder_main main.cc test/recorder/recorder_test.cc)
 target_link_libraries(recorder_main recorder -lgtest -lpthread)
 
 add_subdirectory(compressor)
+add_subdirectory(decompressor)
 
 add_executable(compressor_main main.cc test/compressor/compressor_test.cc)
 
-target_link_libraries(compressor_main compressor -lgtest -lpthread)
+target_link_libraries(compressor_main compressor decompressor -lgtest -lpthread)

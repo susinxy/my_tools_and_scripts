@@ -1,0 +1,13 @@
+/home/zby/my_tools_and_scripts/log/build/CMakeFiles/edit_cache.dir
+/home/zby/my_tools_and_scripts/log/build/CMakeFiles/compressor_main.dir
+/home/zby/my_tools_and_scripts/log/build/CMakeFiles/rebuild_cache.dir
+/home/zby/my_tools_and_scripts/log/build/CMakeFiles/recorder_main.dir
+/home/zby/my_tools_and_scripts/log/build/recorder/CMakeFiles/edit_cache.dir
+/home/zby/my_tools_and_scripts/log/build/recorder/CMakeFiles/rebuild_cache.dir
+/home/zby/my_tools_and_scripts/log/build/recorder/CMakeFiles/recorder.dir
+/home/zby/my_tools_and_scripts/log/build/compressor/CMakeFiles/edit_cache.dir
+/home/zby/my_tools_and_scripts/log/build/compressor/CMakeFiles/rebuild_cache.dir
+/home/zby/my_tools_and_scripts/log/build/compressor/CMakeFiles/compressor.dir
+/home/zby/my_tools_and_scripts/log/build/decompressor/CMakeFiles/rebuild_cache.dir
+/home/zby/my_tools_and_scripts/log/build/decompressor/CMakeFiles/edit_cache.dir
+/home/zby/my_tools_and_scripts/log/build/decompressor/CMakeFiles/decompressor.dir
