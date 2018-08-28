@@ -3,36 +3,33 @@
 #include <time.h>
 #include <string.h>
 #include "recorder.h"
-#include <stdlib.h>
-#define record_node_len sizeof(record_node)
-#define record_element_len sizeof(record_element)
-section table[MAXSIZE];
+#include <malloc.h>
+
+section table[MAX_SECTION];
+char tmp[MAXLEN];
+char record_contents[MAXLEN];
 int record(int section_id,int type,int key,int oper,int para_cnt,...)
 {
-    char tmp[MAXLEN];
-    unsigned int totol_len=0;
+    unsigned int total_len=0;
     va_list v_args;
-
     unsigned int para_len;
     char *para;
-    //memcpy(tmp,&para_cnt,sizeof(int));
     *((int*)tmp)=para_cnt;
-
-    totol_len+=sizeof(int);
+    total_len+=sizeof(int);
     va_start(v_args,para_cnt);
     for(int i=0;i<para_cnt;i++)
     {
         para= va_arg(v_args,char*);
         para_len=va_arg(v_args,unsigned int);
 
-        *((int*)(tmp+totol_len))=para_len;
+        *((int*)(tmp+total_len))=para_len;
 
-        totol_len+=sizeof(unsigned int);
-        memcpy(tmp+totol_len,para,para_len);
-        totol_len+=para_len;
+        total_len+=sizeof(unsigned int);
+        memcpy(tmp+total_len,para,para_len);
+        total_len+=para_len;
     }
     va_end(v_args);
-    char record_contents[MAXLEN];
+
     //here variable contents means a record which will be written into memory
     record_element *contents=(record_element*)record_contents;
     //Acquire system time
@@ -49,11 +46,12 @@ int record(int section_id,int type,int key,int oper,int para_cnt,...)
     contents->type=type;
     contents->key=key;
     contents->oper=oper;
-    contents->len=record_element_len+totol_len;
-    memcpy(contents->data,tmp,totol_len);
-    char *yu=record_contents+contents->len;
-    for(int i=0;i<MAXLEN-contents->len;++i) yu[i]='\0';
-   //compute how many blocks will be covered by the record
+    contents->len=record_element_len+total_len;
+    memcpy(contents->data,tmp,total_len);
+    //if the record is too long to be contained by the whole section,then return -1
+   int cnt=table[section_id].len/(table[section_id].block_size+record_node_len);
+   if(contents->len>cnt*table[section_id].block_size) return -1;
+    //compute how many blocks will be covered by the record
    unsigned int block_covered;
    if(contents->len%table[section_id].block_size==0)
     block_covered=contents->len/table[section_id].block_size;
@@ -79,6 +77,8 @@ int record(int section_id,int type,int key,int oper,int para_cnt,...)
 
 int record_section(int section_id,int block_size,void *addr,int len)
 {
+    if(section_id<0||section_id>MAX_SECTION) return -1;
+    if(block_size<=0||block_size>MAX_BLOCK_SIZE) return -2;
     //record the information about the section
     table[section_id].block_size=block_size;
     table[section_id].addr=addr;
@@ -90,6 +90,7 @@ int record_section(int section_id,int block_size,void *addr,int len)
     //initialize record_node information
     for(int i=0;i<cnt;++i)
     {
+        current->block_size=block_size;
         current->in_use=0;
         current->how_many_blocks=0;
         current->block_offset=record_node_len*cnt+block_size*i;
