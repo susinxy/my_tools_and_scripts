@@ -16,6 +16,8 @@ unsigned char str2[1024*1024];
 unsigned char str3[1024*1024*10];
 unsigned char str4[1024*1024*10];
 unsigned char str5[1024*1024];
+unsigned char str6[1024*1024*20];
+
 char compress_out[sizeof(str)];
 char decompress_out[sizeof(str)];
 char compress_out1[sizeof(str1)];
@@ -28,6 +30,8 @@ char compress_out4[sizeof(str4)];
 char decompress_out4[sizeof(str4)];
 char decompress_out5[sizeof(str5)];
 char compress_out5[sizeof(str5)];
+char decompress_out6[sizeof(str6)];
+char compress_out6[sizeof(str6)];
 
 int compress_len_out,decompress_len_out;
 int  a[30];
@@ -66,8 +70,7 @@ TEST(compressor,para_test)
         printf("The compressor rate is:  %d%\n",rate);
 
         EXPECT_EQ(0,memcmp(str,decompress_out,decompress_len_out));
-	int a= memcmp(str2,decompress_out2,decompress_len_out);
-        printf("%d\n",a);
+	
         
     }
     else
@@ -99,8 +102,7 @@ TEST(compressor,para_test01)
         int rate = compress_len_out*100/decompress_len_out;
         printf("The compressor rate is:  %d%\n",rate);
 	EXPECT_EQ(0,memcmp(str1,decompress_out1,decompress_len_out));
-        int a= memcmp(str1,decompress_out1,decompress_len_out);
-        printf("%d\n",a);
+        
         
     }
     else
@@ -132,10 +134,7 @@ TEST(compressor,para_test02)
         printf("time for decompress： %ld us\n", timer2);
         int rate =compress_len_out*100/decompress_len_out;
         printf("The compressor rate is:  %d%\n",rate);
-	EXPECT_EQ(0,memcmp(str2,decompress_out2,decompress_len_out));
-        int a= memcmp(str2,decompress_out2,decompress_len_out);
-        printf("%d\n",a);
-        
+	EXPECT_EQ(0,memcmp(str2,decompress_out2,decompress_len_out)); 
     }
     else
     {
@@ -164,9 +163,7 @@ TEST(compressor,para_test03)
         gettimeofday(&end, NULL);
         timer2 = 1000000 * (end.tv_sec - start.tv_sec) + end.tv_usec - start.tv_usec;
         printf("time for decompress： %ld us\n", timer2);
-       EXPECT_EQ(0,memcmp(str3,decompress_out3,decompress_len_out));
-        int a= memcmp(str3,decompress_out3,decompress_len_out);
-        printf("%d\n",a);
+        EXPECT_EQ(0,memcmp(str3,decompress_out3,decompress_len_out));
         int rate = compress_len_out*100/decompress_len_out;
         printf("The compressor rate is:  %d%\n",rate);
     }
@@ -212,8 +209,7 @@ TEST(compressor,para_test04)
         printf("time for decompress： %ld us\n", timer2);
         int rate = compress_len_out*100/decompress_len_out;
         printf("The compressor rate is:  %d%\n",rate);
-        int a= memcmp(str4,decompress_out4,decompress_len_out);
-        printf("%d\n",a);
+      
         
     }
     else
@@ -247,9 +243,42 @@ TEST(compressor,para_test05)
         gettimeofday(&end, NULL);
         timer2 = 1000000 * (end.tv_sec - start.tv_sec) + end.tv_usec - start.tv_usec;
         printf("time for decompress： %ld us\n", timer2);
-       EXPECT_EQ(0,memcmp(str5,decompress_out5,decompress_len_out));
-        int a= memcmp(str5,decompress_out5,decompress_len_out);
-        printf("%d\n",a);
+        EXPECT_EQ(0,memcmp(str5,decompress_out5,decompress_len_out));
+        int rate = compress_len_out*100/decompress_len_out;
+        printf("The compressor rate is:  %d%\n",rate);
+    }
+    else
+    {
+        printf("failed!\n");
+    }
+     
+}
+
+TEST(compressor,para_test06)
+{
+    srand((unsigned)time(NULL));
+    for (int i = 0; i < sizeof(str6);i++)
+    {   
+	int j = rand()%2;
+	if (j == 0)
+	  str6[i] = 0;
+	else str6[i] = rand()%128;
+	 
+    }
+    gettimeofday(&start, NULL);
+    int q6 = compress(str6,sizeof(str6),(void*)compress_out6,&compress_len_out);
+    gettimeofday(&end, NULL);
+    timer1 = 1000 * (end.tv_sec - start.tv_sec) + end.tv_usec - start.tv_usec;
+    printf("time for compress： %ld us\n", timer1);
+    
+    if(!q6)
+    {
+        gettimeofday(&start, NULL);
+        decompress(compress_out6,compress_len_out,(void*)decompress_out6,&decompress_len_out);
+        gettimeofday(&end, NULL);
+        timer2 = 1000000 * (end.tv_sec - start.tv_sec) + end.tv_usec - start.tv_usec;
+        printf("time for decompress： %ld us\n", timer2);
+        EXPECT_EQ(0,memcmp(str6,decompress_out6,decompress_len_out));
         int rate = compress_len_out*100/decompress_len_out;
         printf("The compressor rate is:  %d%\n",rate);
     }

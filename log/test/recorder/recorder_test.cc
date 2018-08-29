@@ -2,7 +2,8 @@
 #include "../../recorder/recorder.h"
 #include <stdarg.h>
 #include <string.h>
-#include <time.h>
+#include <sys/time.h>
+#include <math.h>
 #include <malloc.h>
 
 char test0[512];
@@ -27,10 +28,13 @@ char test6[512];
 char test7[1024*1024];
 char test8[1024*1024];
 char test9[512];
+char test10[1024*1024];
+char test101[1024*1024];
 
-char s[200]="A0123456789abcdefghijklmnopqrstuvwxyz0123456789abcdefghijklmnopqrstuvwxyz0123456789abcdefghijklmnopqrstuvwxyz0123456789abcdefghijklmnopqrstuvwxyz";
-char n[100]="B0123456789abcdefghijklmnopqrstuvwxyz0123456789abcdefghijklmnopqrstuvwxyz";
-char l[200]="B0123456789abcdefghijklmnopqrstuvwxyz0123456789abcdefghijklmnopqrstuvwxyz0123456789abcdefghijklmnopqrstuvwxyz0123456789abcdefghijklmnopqrstuvwxyz";
+char s1[200]="A0123456789abcdefghijklmnopqrstuvwxyz0123456789abcdefghijklmnopqrstuvwxyz0123456789abcdefghijklmnopqrstuvwxyz0123456789abcdefghijklmnopqrstuvwxyz";
+char s2[100]="B0123456789abcdefghijklmnopqrstuvwxyz0123456789abcdefghijklmnopqrstuvwxyz";
+char s3[200]="B0123456789abcdefghijklmnopqrstuvwxyz0123456789abcdefghijklmnopqrstuvwxyz0123456789abcdefghijklmnopqrstuvwxyz0123456789abcdefghijklmnopqrstuvwxyz";
+char s4[1024*20];
 struct tm *timess;
 
 typedef struct element
@@ -84,7 +88,7 @@ TEST(recorder,para_test01)//record_section:512%(54+12) != 0
 {
     EXPECT_EQ(0,record_section(0,54,(void*)test1,512));
     init_meta_data_section((void*)test11,512,54);
-    EXPECT_EQ(0,memcmp((void*)test1,(void*)test11,96));
+    EXPECT_EQ(0,memcmp((void*)test1,(void*)test11,512));
     EXPECT_EQ(0,record_section_destory(0));
 }
 
@@ -95,11 +99,11 @@ TEST(recorder,para_test02)
     time_t t;
     t = time(0);
     timess = localtime(&t);
-    record(1,1,1,1,1,s,4);
+    record(1,1,1,1,1,s1,4);
    
     test21[2]=1;
     test21[3]=1;
-    record_elements *p=(record_elements*)malloc(52);
+    record_elements *p=(record_elements*)malloc(32);
 
     p->year=timess->tm_year+1900;
     p->month=timess->tm_mon+1;
@@ -118,9 +122,16 @@ TEST(recorder,para_test02)
 
     memcpy(test21+96,p,32);  
     memcpy(test21+128,a,4);
-    
+    for(int i=0;i<512;i++)
+    {
+        if(test2[i]!=test21[i])
+	{
+		printf("%d:%c|%c\n",i,test2[i],test21[i]);
+	}
+    }
     free(p);
-    EXPECT_EQ(0,memcmp((void*)test2,(void*)test21,96));
+    EXPECT_EQ(0,memcmp((void*)test2,(void*)test21,512));
+  
 }
 
 TEST(recorder,para_test03)
@@ -130,12 +141,12 @@ TEST(recorder,para_test03)
     t = time(0);
     timess = localtime(&t);
     init_meta_data_section((void*)test31,sizeof(test31),52);
-    record(1,2,2,2,1,s,30);
+    record(1,2,2,2,1,s1,30);
 
     test31[2]=1;
     test31[3]=2;
     test31[14]=1;
-    record_elements *p=(record_elements*)malloc(116);
+    record_elements *p=(record_elements*)malloc(32);
     p->year=timess->tm_year+1900;
     p->month=timess->tm_mon+1;
     p->day=timess->tm_mday;
@@ -153,7 +164,13 @@ TEST(recorder,para_test03)
 
     memcpy(test31+96,p,32);   
     memcpy(test31+128,a,30);
-   
+    for(int i=0;i<512;i++)
+    {
+        if(test3[i]!=test31[i])
+	{
+		printf("%d:%c|%c\n",i,test2[i],test21[i]);
+	}
+    }
     free(p);
     EXPECT_EQ(0,memcmp((void*)test3,(void*)test31,512));
     
@@ -166,9 +183,9 @@ TEST(recorder,para_test04)
     t = time(0);
     timess = localtime(&t);
     init_meta_data_section((void*)test41,sizeof(test41),52);
-    record(1,2,2,2,1,s,30);
-    record(1,3,3,3,3,s,100,n,50,l,50);
-    record(1,4,4,4,1,n,50);
+    record(1,2,2,2,1,s1,30);
+    record(1,3,3,3,3,s1,100,s2,50,s3,50);
+    record(1,4,4,4,1,s2,50);
     
     test41[2]=1;
     test41[14]=1;
@@ -227,9 +244,17 @@ TEST(recorder,para_test04)
     memcpy(test41+336,c,50);
     memcpy(test41+386,&datalen,4);
     memcpy(test41+390,c,50);
+    for(int i=0;i<512;i++)
+    {
+        if(test4[i]!=test41[i])
+	{
+		printf("%d:%c|%c\n",i,test2[i],test21[i]);
+	}
+    }
+	
     free(p);
     EXPECT_EQ(0,memcmp((void*)test4,(void*)test41,512));
-    
+   
 }
 
 TEST(recorder,para_test05)
@@ -239,10 +264,10 @@ TEST(recorder,para_test05)
     t = time(0);
     timess = localtime(&t);
     init_meta_data_section((void*)test51,sizeof(test51),52);
-    record(1,2,2,2,1,s,30);
-    record(1,3,3,3,3,s,100,n,50,l,50);
-    record(1,4,4,4,1,n,50);
-    record(1,5,5,5,1,s,100);
+    record(1,2,2,2,1,s1,30);
+    record(1,3,3,3,3,s1,100,s2,50,s3,50);
+    record(1,4,4,4,1,s2,50);
+    record(1,5,5,5,1,s1,100);
     
     test51[2]=1;
     test51[14]=1;
@@ -257,10 +282,10 @@ TEST(recorder,para_test05)
     
     int datalen=50;
     char *b = "A0123456789abcdefghijklmnopqrstuvwxyz0123456789abcdefghijklmnopqrstuvwxyz0123456789abcdefghijklmnopq";
-    char *c=  "B0123456789abcdefghijklmnopqrstuvwxyz0123456789abc";
+    char *c="B0123456789abcdefghijklmnopqrstuvwxyz0123456789abc";
     
-    record_elements *p=(record_elements*)malloc(512);
-    record_elements *q=(record_elements*)malloc(512);
+    record_elements *p=(record_elements*)malloc(32);
+    record_elements *q=(record_elements*)malloc(32);
     
     p->year=timess->tm_year+1900;
     p->month=timess->tm_mon+1;
@@ -298,6 +323,16 @@ TEST(recorder,para_test05)
     memcpy(test51+390,c,50);
     memcpy(test51+460,q,32);
     memcpy(test51+460+32,c,20);
+    for(int i=0;i<512;i++)
+    {
+        if(test5[i]!=test51[i])
+	{
+		printf("%d:%c|%c\n",i,test2[i],test21[i]);
+	}
+    }
+
+    free(p);
+    free(q);
     EXPECT_EQ(0,memcmp((void*)test5,(void*)test51,512));
     
 }
@@ -319,7 +354,7 @@ TEST(recorder,para_test07)
 TEST(recorder,para_test08)
 {
     record_section(1,1,test8,256*256);
-    if( record(1,6,6,6,3,s,100,n,50,l,100) == -2 ) 
+    if( record(1,6,6,6,3,s1,100,s2,50,s3,100) == -2 ) 
 	printf("Record Failure:how_many_block should be in the range of 0~255\n");
 }
   
@@ -327,10 +362,69 @@ TEST(recorder,para_test08)
 TEST(recorder,para_test09)
 {
     record_section(1,52,test9,256);
-    if( record(1,6,6,6,3,s,100,n,50,l,50) == -1 ) 
+    if( record(1,6,6,6,3,s1,100,s2,50,s3,50) == -1 ) 
 	printf("Record Failure:the total size of block is not enough for the record\n");
 }
-  
+
+TEST(recorder,para_test10)
+{ 
+    record_section(1,1012,test10,1024*1024);
+    init_meta_data_section((void*)test101,1024*1024,1012);
+    srand((unsigned)time(NULL));
+    for (int i = 0; i < sizeof(s4);i++)
+    {
+        s4[i] = rand() % 128;
+    }
+    time_t t;
+    t = time(0);
+    timess = localtime(&t);
+    record(1,7,7,7,1,s4,20*1024);
+    test101[2]=1;
+    test101[3]=21;
+    test101[14]=1;
+    test101[26]=1;
+    test101[38]=1;
+    test101[50]=1;
+    test101[62]=1;
+    test101[74]=1;
+    test101[86]=1;
+    test101[98]=1;
+    test101[110]=1;
+    test101[122]=1;
+    test101[134]=1;
+    test101[146]=1;
+    test101[158]=1;
+    test101[170]=1;
+    test101[182]=1;
+    test101[194]=1;
+    test101[206]=1;
+    test101[218]=1;
+    test101[230]=1;
+    test101[242]=1;
+   
+
+    record_elements *p=(record_elements*)malloc(32);
+
+    p->year=timess->tm_year+1900;
+    p->month=timess->tm_mon+1;
+    p->day=timess->tm_mday;
+    p->hour=timess->tm_hour;
+    p->min=timess->tm_min;
+    p->sec=timess->tm_sec;
+    p->type=7;
+    p->key=7;
+    p->oper=7;
+    p->len=20512;
+    p->num=1;
+    p->first=20480;
+
+    memcpy(test101+12288,p,32);  
+    memcpy(test101+12320,s4,20*1024);
+    
+    free(p);
+    EXPECT_EQ(0,memcmp((void*)test10,(void*)test101,1024*1024));
+}
+ 
 
 
 
