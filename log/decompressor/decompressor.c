@@ -6,7 +6,7 @@
 
 // ****** Global Variables ******
 static char codes[MAX_CHAR + 5][MAX_TREE_HT + 5];  // within the range of ASCII codes(MAX_CHAR = 256), and the length of tree height maximized to 256;
-static char decompress_contents[1024*1024*10*8+10];
+
 
 
 // ****** Struct Denotation ******
@@ -156,7 +156,7 @@ static void integer_to_binary(unsigned char s[], unsigned char x)//binary string
        s[READ_LEN]='\0';
 }
 
-int decompress(void *addr_in,int len_in, void*addr_out, int *len_out)
+int decompress(void *addr_in,int len_in, void* addr_out, int *len_out)
 {
     unsigned char arr[MAX_CHAR+5];//valid characters that have benn coded
     int cnt[MAX_CHAR+5];//the frequncy of valid characters
@@ -175,7 +175,7 @@ int decompress(void *addr_in,int len_in, void*addr_out, int *len_out)
         read_addr+=sizeof(int);
     }
     HuffmanCodes(arr,cnt,size);//acquire the huffman codes
-
+    char *decompress_contents=malloc(len_in*READ_LEN);
     //*************** acquire the decompress_contents in binary form**************//
     len_in-=sizeof(int)+size*(sizeof(int)+sizeof(unsigned char));
     unsigned char remainder=*read_addr;
@@ -213,6 +213,6 @@ int decompress(void *addr_in,int len_in, void*addr_out, int *len_out)
         }
     }
     *len_out=write_len;
-
+    free(decompress_contents);
     return 0;
 }
