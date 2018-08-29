@@ -2,7 +2,7 @@
 #include <string.h>
 #include <malloc.h>
 #include "visualization.h"
-int output(FILE* fp, record_element* re, int para_num)
+int output(FILE* fp, record_element* re, int para_num, int len)
 {
 	fprintf(fp, "%d\t", re->year);
 	fprintf(fp, "%d\t", re->month);
@@ -20,7 +20,7 @@ int output(FILE* fp, record_element* re, int para_num)
 		para_num = para_cnt;
 	totol_len += sizeof(int);
 	int para_len;
-	char s[MAXLEN];
+	char* s = malloc(len);
 	for (int i = 0; i<para_cnt; ++i)
 	{
 		para_len = *((int*)(initial_addr + totol_len));
@@ -31,6 +31,7 @@ int output(FILE* fp, record_element* re, int para_num)
 		fprintf(fp, "\t");
 	}
 	fprintf(fp, "\n");
+	free(s);
 	return para_num;//返回新的para_num
 }
 
@@ -59,8 +60,7 @@ int visualization(void* addr, int len)
 				rn = (record_node*)(initial_addr + rn->next_offset);
 			}
 			record_element* re = (record_element*)record_contents;//定义指向record_element的结构体指针
-			memcpy(re->data, record_contents + record_element_len, re->len - record_element_len);
-			para_num = output(fp, re, para_num);
+			para_num = output(fp, re, para_num, re->len - record_element_len);
 			free(record_contents);
 		}
 		else
