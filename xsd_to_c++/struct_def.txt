@@ -1,0 +1,13 @@
+typedef struct @struc_name@ {
+    @members:method@
+
+    serialize(@serialize_para_type@ @serialize_para_name@)
+    {
+        @serialize:method@
+    }
+
+    deserialize(@deserialize_para_type@ @deserialize_para_name@)
+    {
+        @deserialize:method@
+    }
+}@struc_name@;
