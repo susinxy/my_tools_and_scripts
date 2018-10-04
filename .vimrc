@@ -4,6 +4,7 @@ set shiftwidth=4
 set expandtab
 syntax enable
 set smartindent
+set hlsearch
 
 " enable filetype options to auto recognize file type and use corresponding plugin to parse files
 filetype on
