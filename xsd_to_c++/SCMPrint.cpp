@@ -125,6 +125,40 @@ public:
         return fSawErrors;
     }
 
+    // -----------------------------------------------------------------------
+    //  Implementations of the SAX DocumentHandler interface
+    // -----------------------------------------------------------------------
+    void endDocument();
+
+    void endElement( const XMLCh* const uri,
+					 const XMLCh* const localname,
+					 const XMLCh* const qname);
+
+    void characters(const XMLCh* const chars, const XMLSize_t length);
+
+    void ignorableWhitespace
+    (
+        const   XMLCh* const    chars
+        , const XMLSize_t       length
+    );
+
+    void processingInstruction
+    (
+        const   XMLCh* const    target
+        , const XMLCh* const    data
+    );
+
+    void startDocument();
+
+    void startElement(	const   XMLCh* const    uri,
+						const   XMLCh* const    localname,
+						const   XMLCh* const    qname,
+					    const   Attributes&		attributes);
+
+    // -----------------------------------------------------------------------
+    //  Implementations of the SAX ErrorHandler interface
+    // -----------------------------------------------------------------------
+ 
 	void warning(const SAXParseException& exc);
     void error(const SAXParseException& exc);
     void fatalError(const SAXParseException& exc);
@@ -143,7 +177,108 @@ SCMPrintHandler::SCMPrintHandler() :
 SCMPrintHandler::~SCMPrintHandler()
 {
 }
+// ---------------------------------------------------------------------------
+//  SAX2PrintHandlers: Overrides of the SAX DocumentHandler interface
+// ---------------------------------------------------------------------------
+void SCMPrintHandler::characters(const     XMLCh* const    chars
+                                  , const   XMLSize_t    length)
+{
+    XERCES_STD_QUALIFIER cout << string(StrX(chars).localForm(),length) << XERCES_STD_QUALIFIER endl;  
+}
 
+
+void SCMPrintHandler::endDocument()
+{
+}
+
+
+void SCMPrintHandler::endElement(const XMLCh* const uri,
+								 const XMLCh* const localname,
+								 const XMLCh* const qname)
+{
+#if 0
+    // No escapes are legal here
+    fFormatter << XMLFormatter::NoEscapes << gEndElement ;
+	if ( fExpandNS )
+	{
+		if (XMLString::compareIString(uri,XMLUni::fgZeroLenString) != 0)
+				fFormatter  << uri << chColon;
+		fFormatter << localname << chCloseAngle;
+	}
+	else
+		fFormatter << qname << chCloseAngle;
+#endif
+}
+
+
+void SCMPrintHandler::ignorableWhitespace( const   XMLCh* const chars
+                                            ,const  XMLSize_t length)
+{
+//    fFormatter.formatBuf(chars, length, XMLFormatter::NoEscapes);
+}
+
+
+void SCMPrintHandler::processingInstruction(const  XMLCh* const target
+                                            , const XMLCh* const data)
+{
+#if 0
+    fFormatter << XMLFormatter::NoEscapes << gStartPI  << target;
+    if (data)
+        fFormatter << chSpace << data;
+    fFormatter << XMLFormatter::NoEscapes << gEndPI;
+#endif
+}
+
+
+void SCMPrintHandler::startDocument()
+{
+}
+
+
+void SCMPrintHandler::startElement(const   XMLCh* const    uri,
+									const   XMLCh* const    localname,
+									const   XMLCh* const    qname,
+                                    const   Attributes&		attributes)
+{
+#if 0
+    // The name has to be representable without any escapes
+    fFormatter  << XMLFormatter::NoEscapes << chOpenAngle ;
+	if ( fExpandNS )
+	{
+		if (XMLString::compareIString(uri,XMLUni::fgZeroLenString) != 0)
+				fFormatter  << uri << chColon;
+		fFormatter << localname ;
+	}
+	else
+		fFormatter << qname ;
+
+    XMLSize_t len = attributes.getLength();
+    for (XMLSize_t index = 0; index < len; index++)
+    {
+        //
+        //  Again the name has to be completely representable. But the
+        //  attribute can have refs and requires the attribute style
+        //  escaping.
+        //
+        fFormatter  << XMLFormatter::NoEscapes << chSpace ;
+		if ( fExpandNS )
+		{
+			if (XMLString::compareIString(attributes.getURI(index),XMLUni::fgZeroLenString) != 0)
+				fFormatter  << attributes.getURI(index) << chColon;
+			fFormatter  << attributes.getLocalName(index) ;
+		}
+		else
+			fFormatter  << attributes.getQName(index) ;
+
+		fFormatter  << chEqual << chDoubleQuote
+                    << XMLFormatter::AttrEscapes
+		            << attributes.getValue(index)
+                    << XMLFormatter::NoEscapes
+                    << chDoubleQuote;
+    }
+    fFormatter << chCloseAngle;
+#endif
+}
 // ---------------------------------------------------------------------------
 //  SCMPrintHandler: Overrides of the SAX ErrorHandler interface
 // ---------------------------------------------------------------------------
@@ -283,21 +418,17 @@ class cfg_bin_struct_generator : public struct_def_gen_class,public members_gen_
         }
         static void add_to_type_defines(cfg_bin_struct_generator *pcfg)
         {
-            structdef_map toRemove;
             structDefUnresolved.insert(structdef_pair(pcfg->struc_name,*pcfg));
+resolve:
             for(structdef_map::iterator it=structDefUnresolved.begin();it != structDefUnresolved.end(); ++it)
             {
                 if(it->second.is_structdef_resolved(structDefDefinedType)==true)
                 {
-                    XERCES_STD_QUALIFIER cout << "adding structure "<< it->first << XERCES_STD_QUALIFIER endl;
-                    toRemove.insert(structdef_pair(it->first,it->second));
                     structDefResolved.push_back(it->second);
                     structDefDefinedType.insert(structdef_pair(it->first,it->second));
+                    structDefUnresolved.erase(it->first);
+                    goto resolve;
                 }
-            }
-            for(structdef_map::iterator it=toRemove.begin();it != toRemove.end(); ++it)
-            {
-                structDefUnresolved.erase(it->first);
             }
         }
         static void cfg_bin_output(ostream &stream)
@@ -408,6 +539,7 @@ int main(int argC, char* argV[])
 
     XMLGrammarPool *grammarPool = 0;
     SAX2XMLReader* parser = 0;
+    SCMPrintHandler handler;
     try
     {
         grammarPool = new XMLGrammarPoolImpl(XMLPlatformUtils::fgMemoryManager);
@@ -420,9 +552,12 @@ int main(int argC, char* argV[])
         parser->setFeature(XMLUni::fgSAX2CoreNameSpacePrefixes, false);
         parser->setFeature(XMLUni::fgSAX2CoreValidation, true);
         parser->setFeature(XMLUni::fgXercesDynamic, true);
+        parser->setFeature(XMLUni::fgXercesUseCachedGrammarInParse, true);
         parser->setProperty(XMLUni::fgXercesScannerName, (void *)XMLUni::fgSGXMLScanner);
 
-        SCMPrintHandler handler;
+        //SCMPrintHandler handler;
+        //parser->setContentHandler(&handler);
+        parser->setContentHandler(&handler);
         parser->setErrorHandler(&handler);
 
         bool more = true;
@@ -526,6 +661,31 @@ int main(int argC, char* argV[])
         errorCode = 5;
     }
     cfg_bin_struct_generator::cfg_bin_output(XERCES_STD_QUALIFIER cout);
+
+	XMLSize_t errorCount = 0;
+    errorCode = 0;
+    try{
+        parser->parse("Order.xml");
+        errorCount = parser->getErrorCount();
+    }
+    catch (const OutOfMemoryException&)
+    {
+        XERCES_STD_QUALIFIER cerr << "OutOfMemoryException" << XERCES_STD_QUALIFIER endl;
+        errorCode = 5;
+    }
+    catch (const XMLException& toCatch)
+    {
+        XERCES_STD_QUALIFIER cerr << "\nAn error occurred\n  Error: "
+             << StrX(toCatch.getMessage())
+             << "\n" << XERCES_STD_QUALIFIER endl;
+        errorCode = 4;
+    }
+
+    if(errorCode) {
+        XMLPlatformUtils::Terminate();
+        return errorCode;
+    }
+
 
     delete parser;
     delete grammarPool;
